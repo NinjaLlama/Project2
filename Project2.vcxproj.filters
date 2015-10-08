@@ -35,13 +35,13 @@
     <ClInclude Include="missle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="moon.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="planet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="warbird.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="moon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

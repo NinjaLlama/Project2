@@ -28,8 +28,14 @@ and make sure 'Single Startup Project' is selected ***
 */
 
 # define __Windows__
+# ifndef __INCLUDES465__
 # include "../includes465/include465.hpp"
-# define __INCLUDES465__ 
+# define __INCLUDES465__
+# endif
+# include "planet.h"
+# include "moon.h"
+# include "warbird.h"
+# include "missle.h"
 
 const int X = 0, Y = 1, Z = 2, W = 3, START = 0, STOP = 1;
 // constants for models:  file names, vertex count, model display size
@@ -102,7 +108,15 @@ glm::mat4 DuoRotation = glm::rotate(identity, PI, glm::vec3(0, 1, 0)); //used to
 glm::mat4 UnumMatrix;
 glm::vec3 UnumTranslate;
 
-glm::mat4 modelMatrix;          // set in display()
+Planet * ruber;
+Planet * unum;
+Planet * duo;
+Moon * primus;
+Moon * secundus;
+Warbird * warbird;
+Missle * missle;
+
+glm::mat4 modelMatrix[nModels];          // set in display()
 glm::mat4 viewMatrix;           // set in init()
 glm::mat4 projectionMatrix;     // set in reshape()
 glm::mat4 ModelViewProjectionMatrix; // set in display();
@@ -134,82 +148,136 @@ void updateTitle() {
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	// update model matrix
+	ruber->createModelMatrix();
+	unum->createModelMatrix();
+	duo->createModelMatrix();
+	primus->createModelMatrix();
+	secundus->createModelMatrix();
+	warbird->createModelMatrix();
+	missle->createModelMatrix();
+
+	modelMatrix[0] = ruber->getPlanetMatrix();
+	modelMatrix[1] = unum->getPlanetMatrix();
+	modelMatrix[2] = duo->getPlanetMatrix();
+	modelMatrix[3] = primus->getMoonMatrix();
+	modelMatrix[4] = secundus->getMoonMatrix();
+	modelMatrix[5] = warbird->getWarbirdMatrix();
+	modelMatrix[6] = missle->getMissleMatrix();
+
 	for (int m = 0; m < nModels; m++) {
-		if (m == 1) //Unum orbits Ruber
-		{
-			modelMatrix = rotationOne * glm::translate(glm::mat4(), translate[m]) *
-				glm::scale(glm::mat4(), glm::vec3(scale[m]));
-			UnumMatrix = modelMatrix;
-			UnumTranslate = glm::vec3(UnumMatrix[3]);
-		}
-		else if (m == 2) //Duo orbits Ruber
-		{
-			modelMatrix = rotationTwo * DuoRotation * glm::translate(glm::mat4(), translate[m]) *
-				glm::scale(glm::mat4(), glm::vec3(scale[m]));
-			DuoMatrix = modelMatrix;
-			DuoTranslate = glm::vec3(DuoMatrix[3]);
-			//showVec3("Duo", DuoTranslate); //for debugging purposes
-		}
-		else if (m == 3) //Primus orbits Duo
-		{
-
-			modelMatrix = glm::translate(glm::mat4(), DuoTranslate) * rotationOne * glm::translate(glm::mat4(), translate[m]) *
-				glm::scale(glm::mat4(), glm::vec3(scale[m]));
-			//* glm::translate(glm::mat4(), DuoTranslate);
-		}
-		else if (m == 4) //Secundus orbits Duo
-		{
-			modelMatrix = glm::translate(glm::mat4(), DuoTranslate) * rotationTwo * glm::translate(glm::mat4(), translate[m]) *
-				glm::scale(glm::mat4(), glm::vec3(scale[m]));
-		}
-		/*else if (m == 7 && debug) //axes for Duo
-		{
-		modelMatrix = rotationTwo * axesRotation*glm::translate(glm::mat4(), translate[m]) *
-		glm::scale(glm::mat4(), glm::vec3(scale[m]));
-		axesMatrix = modelMatrix;
-		axesTranslate = glm::vec3(axesMatrix[3]);
-		}*/
-		else
-		{
-			modelMatrix = glm::translate(glm::mat4(), translate[m]) *
-				glm::scale(glm::mat4(), glm::vec3(scale[m]));
-		}
 		//dynamic cameras
-		//Unum camera
-		if (cameraDuo) //if cameraDuo is true, it means Unum is the current camera view and the Duo camera view is the next to be toggled
-		{
-			//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
-			glm::vec3 zUnum = glm::vec3(UnumMatrix[0][2], UnumMatrix[0][1] * -1, UnumMatrix[0][0] * -1);
-			zUnum = glm::normalize(zUnum);
-			eye = UnumTranslate + zUnum * 4000.0f;        // camera is 4000 units out along Unum's -z axis        
-			at = UnumTranslate;							// camera is looking at Unum
-			up = glm::vec3(0.0f, 1.0f, 0.0f);             // camera's up is Y
-			viewMatrix = glm::lookAt(eye, at, up);
-		}
-		//Duo camera
-		if (cameraFront) //if cameraFront is true, it means Duo is the current camera view and the front camera view is the next to be toggled
-		{
-			//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
-			glm::vec3 zDuo = glm::vec3(DuoMatrix[0][2], DuoMatrix[0][1] * -1, DuoMatrix[0][0] * -1);
-			//showVec3("Duo", zDuo);
-			zDuo = glm::normalize(zDuo);
-			eye = DuoTranslate + zDuo * 4000.0f;				// camera is 4000 units out along Duo's -z axis
-			at = DuoTranslate;								// camera is looking at Duo
-			up = glm::vec3(0.0f, 1.0f, 0.0f);                 // camera's up is Y
-			viewMatrix = glm::lookAt(eye, at, up);
+			//Unum camera
+			//if (cameraDuo) //if cameraDuo is true, it means Unum is the current camera view and the Duo camera view is the next to be toggled
+			//{
+			//	//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
+			//	glm::vec3 zUnum = glm::vec3(UnumMatrix[0][2], UnumMatrix[0][1] * -1, UnumMatrix[0][0] * -1);
+			//	zUnum = glm::normalize(zUnum);
+			//	eye = UnumTranslate + zUnum * 4000.0f;        // camera is 4000 units out along Unum's -z axis        
+			//	at = UnumTranslate;							// camera is looking at Unum
+			//	up = glm::vec3(0.0f, 1.0f, 0.0f);             // camera's up is Y
+			//	viewMatrix = glm::lookAt(eye, at, up);
+			//}
+			////Duo camera
+			//if (cameraFront) //if cameraFront is true, it means Duo is the current camera view and the front camera view is the next to be toggled
+			//{
+			//	//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
+			//	glm::vec3 zDuo = glm::vec3(DuoMatrix[0][2], DuoMatrix[0][1] * -1, DuoMatrix[0][0] * -1);
+			//	//showVec3("Duo", zDuo);
+			//	zDuo = glm::normalize(zDuo);
+			//	eye = DuoTranslate + zDuo * 4000.0f;				// camera is 4000 units out along Duo's -z axis
+			//	at = DuoTranslate;								// camera is looking at Duo
+			//	up = glm::vec3(0.0f, 1.0f, 0.0f);                 // camera's up is Y
+			//	viewMatrix = glm::lookAt(eye, at, up);
+			//}
+
+			// glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr( modelMatrix)); 
+			ModelViewProjectionMatrix = projectionMatrix * viewMatrix * modelMatrix[m];
+			glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
+			glBindVertexArray(VAO[m]);
+			/*  The following 3 lines are not needed !
+			glEnableVertexAttribArray( vPosition[m] );
+			glEnableVertexAttribArray( vColor[m] );
+			glEnableVertexAttribArray( vNormal[m] );
+			*/
+			glDrawArrays(GL_TRIANGLES, 0, nVertices[m]);
 		}
 
-		// glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr( modelMatrix)); 
-		ModelViewProjectionMatrix = projectionMatrix * viewMatrix * modelMatrix;
-		glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
-		glBindVertexArray(VAO[m]);
-		/*  The following 3 lines are not needed !
-		glEnableVertexAttribArray( vPosition[m] );
-		glEnableVertexAttribArray( vColor[m] );
-		glEnableVertexAttribArray( vNormal[m] );
-		*/
-		glDrawArrays(GL_TRIANGLES, 0, nVertices[m]);
-	}
+	//for (int m = 0; m < nModels; m++) {
+	//	if (m == 1) //Unum orbits Ruber
+	//	{
+	//		modelMatrix = rotationOne * glm::translate(glm::mat4(), translate[m]) *
+	//			glm::scale(glm::mat4(), glm::vec3(scale[m]));
+	//		UnumMatrix = modelMatrix;
+	//		UnumTranslate = glm::vec3(UnumMatrix[3]);
+	//	}
+	//	else if (m == 2) //Duo orbits Ruber
+	//	{
+	//		modelMatrix = rotationTwo * DuoRotation * glm::translate(glm::mat4(), translate[m]) *
+	//			glm::scale(glm::mat4(), glm::vec3(scale[m]));
+	//		DuoMatrix = modelMatrix;
+	//		DuoTranslate = glm::vec3(DuoMatrix[3]);
+	//		//showVec3("Duo", DuoTranslate); //for debugging purposes
+	//	}
+	//	else if (m == 3) //Primus orbits Duo
+	//	{
+
+	//		modelMatrix = glm::translate(glm::mat4(), DuoTranslate) * rotationOne * glm::translate(glm::mat4(), translate[m]) *
+	//			glm::scale(glm::mat4(), glm::vec3(scale[m]));
+	//		//* glm::translate(glm::mat4(), DuoTranslate);
+	//	}
+	//	else if (m == 4) //Secundus orbits Duo
+	//	{
+	//		modelMatrix = glm::translate(glm::mat4(), DuoTranslate) * rotationTwo * glm::translate(glm::mat4(), translate[m]) *
+	//			glm::scale(glm::mat4(), glm::vec3(scale[m]));
+	//	}
+	//	/*else if (m == 7 && debug) //axes for Duo
+	//	{
+	//	modelMatrix = rotationTwo * axesRotation*glm::translate(glm::mat4(), translate[m]) *
+	//	glm::scale(glm::mat4(), glm::vec3(scale[m]));
+	//	axesMatrix = modelMatrix;
+	//	axesTranslate = glm::vec3(axesMatrix[3]);
+	//	}*/
+	//	else
+	//	{
+	//		modelMatrix = glm::translate(glm::mat4(), translate[m]) *
+	//			glm::scale(glm::mat4(), glm::vec3(scale[m]));
+	//	}
+	//	//dynamic cameras
+	//	//Unum camera
+	//	if (cameraDuo) //if cameraDuo is true, it means Unum is the current camera view and the Duo camera view is the next to be toggled
+	//	{
+	//		//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
+	//		glm::vec3 zUnum = glm::vec3(UnumMatrix[0][2], UnumMatrix[0][1] * -1, UnumMatrix[0][0] * -1);
+	//		zUnum = glm::normalize(zUnum);
+	//		eye = UnumTranslate + zUnum * 4000.0f;        // camera is 4000 units out along Unum's -z axis        
+	//		at = UnumTranslate;							// camera is looking at Unum
+	//		up = glm::vec3(0.0f, 1.0f, 0.0f);             // camera's up is Y
+	//		viewMatrix = glm::lookAt(eye, at, up);
+	//	}
+	//	//Duo camera
+	//	if (cameraFront) //if cameraFront is true, it means Duo is the current camera view and the front camera view is the next to be toggled
+	//	{
+	//		//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
+	//		glm::vec3 zDuo = glm::vec3(DuoMatrix[0][2], DuoMatrix[0][1] * -1, DuoMatrix[0][0] * -1);
+	//		//showVec3("Duo", zDuo);
+	//		zDuo = glm::normalize(zDuo);
+	//		eye = DuoTranslate + zDuo * 4000.0f;				// camera is 4000 units out along Duo's -z axis
+	//		at = DuoTranslate;								// camera is looking at Duo
+	//		up = glm::vec3(0.0f, 1.0f, 0.0f);                 // camera's up is Y
+	//		viewMatrix = glm::lookAt(eye, at, up);
+	//	}
+
+	//	// glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr( modelMatrix)); 
+	//	ModelViewProjectionMatrix = projectionMatrix * viewMatrix * modelMatrix;
+	//	glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
+	//	glBindVertexArray(VAO[m]);
+	//	/*  The following 3 lines are not needed !
+	//	glEnableVertexAttribArray( vPosition[m] );
+	//	glEnableVertexAttribArray( vColor[m] );
+	//	glEnableVertexAttribArray( vNormal[m] );
+	//	*/
+	//	glDrawArrays(GL_TRIANGLES, 0, nVertices[m]);
+	//}
 	glutSwapBuffers();
 	frameCount++;
 	// see if a second has passed to set estimated fps information
@@ -226,14 +294,18 @@ void display() {
 
 // to set rotation
 void update(void){
-	//rotation speed for Unum and Primus
+	/*//rotation speed for Unum and Primus
 	rotateRadianOne += 0.004f;
 	if (rotateRadianOne >  2 * PI) rotateRadianOne = 0.0f;
 	rotationOne = glm::rotate(identity, rotateRadianOne, glm::vec3(0, 1, 0));
 	//rotation speed for Duo and Secundus
 	rotateRadianTwo += 0.002f;
 	if (rotateRadianTwo >  2 * PI) rotateRadianTwo = 0.0f;
-	rotationTwo = glm::rotate(identity, rotateRadianTwo, glm::vec3(0, 1, 0));
+	rotationTwo = glm::rotate(identity, rotateRadianTwo, glm::vec3(0, 1, 0));*/
+	unum->createRotationMatrix();
+	duo->createRotationMatrix();
+	primus->createRotationMatrix();
+	secundus->createRotationMatrix();
 	glutPostRedisplay();
 }
 
@@ -333,6 +405,28 @@ void init() {
 	// load the shader programs
 	shaderProgram = loadShaders(vertexShaderFile, fragmentShaderFile);
 	glUseProgram(shaderProgram);
+
+	/*char * modelFile[nModels] = { "Ruber.tri", "Unum.tri ", "Duo.tri", "Primus.tri",
+		"Segundus.tri", "BattleCruiser.tri", "Missle.tri" };
+	float modelBR[nModels];       // model's bounding radius
+	float scaleValue[nModels];    // model's scaling "size" value
+	const int nVertices[nModels] = { 264 * 3, 264 * 3, 278 * 3, 264 * 3, 264 * 3, 2772 * 3, 644 * 3 };
+	float modelSize[nModels] = { 2000.0f, 200.0f, 400.0f, 100.0f, 150.0f, 100.0f, 25.0f };   // size of model
+glm::vec3 scale[nModels];       // set in init()
+glm::vec3 translate[nModels] = { glm::vec3(0, 0, 0), glm::vec3(4000, 0, 0), glm::vec3(9000, 0, 0),
+glm::vec3(900, 0, 0), glm::vec3(1750, 0, 0),
+glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
+
+
+};*/
+
+	ruber = new Planet(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), 264 * 3, 0.0f, 0.0f, 2000.0f, "Ruber.tri");
+	unum = new Planet(glm::vec3(4000, 0, 0), glm::vec3(0, 0, 0), 264 * 3, 0.0f, 0.004f, 200.0f, "Unum.tri");
+	duo = new Planet(glm::vec3(9000, 0, 0), glm::vec3(0, 0, 0), 278 * 3, PI, 0.002f, 400.0f, "Duo.tri");
+	primus = new Moon(glm::vec3(900, 0, 0), glm::vec3(0, 0, 0), 264 * 3, 0.0f, 0.004f, 100.0f, "Primus.tri");
+	secundus = new Moon(glm::vec3(1750, 0, 0), glm::vec3(0, 0, 0), 264 * 3, 0.0f, 0.002f, 150.0f, "Secundus.tri");
+	warbird = new Warbird(glm::vec3(5000, 1000, 5000), glm::vec3(0, 0, 0), 2772 * 3, 100.0f, "Warbird.tri");
+	missle = new Missle(glm::vec3(4900, 1000, 4850), glm::vec3(0, 0, 0), 644 * 3, 25.0f, "Missle.tri");
 
 	// generate VAOs and VBOs
 	glGenVertexArrays(nModels, VAO);
