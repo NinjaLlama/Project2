@@ -67,16 +67,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="missle.cpp" />
-    <ClCompile Include="moon.cpp" />
-    <ClCompile Include="planet.cpp" />
-    <ClCompile Include="warbird.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="missle.h" />
-    <ClInclude Include="moon.h" />
-    <ClInclude Include="planet.h" />
-    <ClInclude Include="warbird.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
