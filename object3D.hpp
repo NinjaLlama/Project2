@@ -66,6 +66,7 @@ public:
 		if (isDuo)
 		{
 			rotationMatrix = glm::rotate(rotationMatrix, rotation, rotationAxis) * DuoRotation;
+			isDuo = false;
 		}
 		else
 		{

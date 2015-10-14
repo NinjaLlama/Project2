@@ -41,6 +41,7 @@ and make sure 'Single Startup Project' is selected ***
 const int X = 0, Y = 1, Z = 2, W = 3, START = 0, STOP = 1;
 // constants for models:  file names, vertex count, model display size
 const int nModels = 7;  // number of models in this scene
+const int nCameras = 5;
 char * modelFile[nModels] = { "Ruber.tri", "Unum.tri ", "Duo.tri", "Primus.tri",
 "Segundus.tri", "BattleCruiser.tri", "Missle.tri" };
 float modelBR[nModels];       // model's bounding radius
@@ -52,8 +53,11 @@ GLuint shaderProgram;
 GLuint VAO[nModels];      // Vertex Array Objects
 GLuint buffer[nModels];   // Vertex Buffer Objects
 
-// vectors and values for lookAt
-glm::vec3 eye, at, up;
+//// vectors and values for lookAt
+//glm::vec3 eye, at, up;
+
+Camera * camera[nCameras];
+int toggleCam = 0;
 
 //camera view booleans
 bool cameraFront = false;
@@ -165,32 +169,32 @@ void display() {
 	modelMatrix[5] = warbird->getWarbirdMatrix();
 	modelMatrix[6] = missle->getMissleMatrix();
 
-	showMat4("duo", modelMatrix[2]);
+	//showMat4("duo", modelMatrix[2]);
 
 	for (int m = 0; m < nModels; m++) {
 		//dynamic cameras
 			//Unum camera
-			if (cameraDuo) //if cameraDuo is true, it means Unum is the current camera view and the Duo camera view is the next to be toggled
+			if (toggleCam == 4)
 			{
 				//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
 				glm::vec3 zUnum = glm::vec3(unum->getModelMatrix()[0][2], unum->getModelMatrix()[0][1] * -1, unum->getModelMatrix()[0][0] * -1);
 				zUnum = glm::normalize(zUnum);
-				eye = glm::vec3(unum->getModelMatrix()[3]) + zUnum * 4000.0f;        // camera is 4000 units out along Unum's -z axis        
-				at = glm::vec3(unum->getModelMatrix()[3]);							// camera is looking at Unum
-				up = glm::vec3(0.0f, 1.0f, 0.0f);             // camera's up is Y
-				viewMatrix = glm::lookAt(eye, at, up);
+				camera[3]->eye = glm::vec3(unum->getModelMatrix()[3]) + zUnum * 4000.0f;        // camera is 4000 units out along Unum's -z axis        
+				camera[3]->at = glm::vec3(unum->getModelMatrix()[3]);							// camera is looking at Unum
+				camera[3]->up = glm::vec3(0.0f, 1.0f, 0.0f);             // camera's up is Y
+				viewMatrix = camera[3]->getViewMatrix();
 			}
 			//Duo camera
-			if (cameraFront) //if cameraFront is true, it means Duo is the current camera view and the front camera view is the next to be toggled
+			if (toggleCam == 5)
 			{
 				//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
 				glm::vec3 zDuo = glm::vec3(duo->getModelMatrix()[0][2], duo->getModelMatrix()[0][1] * -1, duo->getModelMatrix()[0][0] * -1);
 				//showVec3("Duo", zDuo);
 				zDuo = glm::normalize(zDuo);
-				eye = glm::vec3(duo->getModelMatrix()[3]) + zDuo * 4000.0f;				// camera is 4000 units out along Duo's -z axis
-				at = glm::vec3(duo->getModelMatrix()[3]);								// camera is looking at Duo
-				up = glm::vec3(0.0f, 1.0f, 0.0f);                 // camera's up is Y
-				viewMatrix = glm::lookAt(eye, at, up);
+				camera[4]->eye = glm::vec3(duo->getModelMatrix()[3]) + zDuo * 4000.0f;				// camera is 4000 units out along Duo's -z axis
+				camera[4]->at = glm::vec3(duo->getModelMatrix()[3]);								// camera is looking at Duo
+				camera[4]->up = glm::vec3(0.0f, 1.0f, 0.0f);                 // camera's up is Y
+				viewMatrix = camera[4]->getViewMatrix();
 			}
 
 			// glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr( modelMatrix)); 
@@ -336,7 +340,12 @@ void keyboard(unsigned char key, int x, int y) {
 		break;*/
 
 	case 'v': case 'V': //toggle camera
-		if (cameraFront)
+		if (toggleCam == 5)
+			toggleCam = 0;
+		viewMatrix = camera[toggleCam]->getViewMatrix();
+		strcpy(viewStr, camera[toggleCam]->getCameraString());
+		toggleCam++;
+		/*if (cameraFront)
 		{
 			eye = glm::vec3(0.0f, 10000.0f, 20000.0f);   // camera's position
 			at = glm::vec3(0);							// position camera is looking at, origin
@@ -384,7 +393,7 @@ void keyboard(unsigned char key, int x, int y) {
 			cameraDuo = false;
 			cameraFront = true;
 			break;
-		}
+		}*/
 
 		break;
 	case 'd': case 'D':  // debug case, not fully implemented yet
@@ -445,13 +454,19 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 
 	MVP = glGetUniformLocation(shaderProgram, "ModelViewProjection");
 
-	// initially use a front view
-	eye = glm::vec3(0.0f, 10000.0f, 20000.0f);   // camera's position
-	at = glm::vec3(0);						   // position camera is looking at
-	up = glm::vec3(0.0f, 1.0f, 0.0f);            // camera'a up vector
+	//// initially use a front view
+	//eye = glm::vec3(0.0f, 10000.0f, 20000.0f);   // camera's position
+	//at = glm::vec3(0);						   // position camera is looking at
+	//up = glm::vec3(0.0f, 1.0f, 0.0f);            // camera'a up vector
 
-	viewMatrix = glm::lookAt(eye, at, up);
+	camera[0] = new Camera(glm::vec3(0.0f, 10000.0f, 20000.0f), glm::vec3(0), glm::vec3(0.0f, 1.0f, 0.0f), 0, " View Front");
+	camera[1] = new Camera(glm::vec3(0.0f, 20000.0f, 0.0f), glm::vec3(0), glm::vec3(0.0f, 0.0f, -1.0f), 0, " View Top");
+	camera[2] = new Camera(glm::vec3(5000.0f, 1300.0f, 6000.0f), glm::vec3(5000.0f, 1000.0f, 5000.0f), glm::vec3(0.0f, 1.0f, 0.0f), 0, " View Warbird");
+	camera[3] = new Camera(glm::vec3(0), glm::vec3(0), glm::vec3(0), 0, " View Unum");
+	camera[4] = new Camera(glm::vec3(0), glm::vec3(0), glm::vec3(0), 0, " View Duo");
 
+	viewMatrix = camera[0]->getViewMatrix();
+	toggleCam++;
 
 	// set render state values
 	glEnable(GL_DEPTH_TEST);
