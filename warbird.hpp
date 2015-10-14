@@ -27,13 +27,38 @@ private:
 	// the model's file
 	char * modelFile;
 
-	//planet's model matrix
-	glm::mat4 warbirdModelMatrix;
+	glm::mat4 orientationMatrix;
+	int step = 0;
+	int pitch, roll, yaw = 0;
+	float radians = 0;
+	glm::vec3 axis;
+	glm::vec3 distance;
+
+	/*// has OM an OrientationMatrix stores update
+// has RM rotation and TM translation matrices, why 2 ?
+int step // -1, 0, 1 values
+int pitch, roll, yaw // -1, 0, 1
+float radians // to rotate on axis
+vec3 axis // axis = vec3(pitch, yaw, roll)
+vec3 distance // vector to move
+...
+void setMove(int i) // step = i
+void setPitch(int i) // pitch = i
+...
+void update()
+distance = vec3(0, 0, step * stepDistance)
+axis = vec3(pitch, yaw, roll)
+RM = rotate(RM, axis, radians)
+TM = translate(TM, distance)
+OM = TM * RM
+step = pitch = yaw = roll = 0*/
 
 
 public:
 
-	Warbird(glm::vec3 translate, glm::vec3 scale, int vertices, float radius, char * modelFile)
+	float stepDistance = 10;
+
+	Warbird(glm::vec3 translate, glm::vec3 scale, int vertices, float radius, char * modelFile) : Object3D(translate, scale, vertices, 0, radius, modelFile)
 	{
 		this->translate = translate;
 		this->scale = scale;
@@ -42,17 +67,77 @@ public:
 		this->modelFile = modelFile;
 	}
 
-
-	void Warbird::createModelMatrix(void)
+	void setMove(int i)
 	{
-		warbirdModelMatrix = glm::translate(glm::mat4(), translate) *
-			glm::scale(glm::mat4(), scale);
+		this->step = i;
+	}
+
+	void setPitch(int i)
+	{
+		this->pitch = i;
+		this->radians = 0.02;
+	}
+
+	void setRoll(int i)
+	{
+		this->roll = i;
+		this->radians = 0.02;
+	}
+
+	void setYaw(int i)
+	{
+		this->yaw = i;
+		this->radians = 0.02;
+	}
+
+	void update()
+	{
+		/*distance = vec3(0, 0, step * stepDistance)
+			axis = vec3(pitch, yaw, roll)
+			RM = rotate(RM, axis, radians)
+			TM = translate(TM, distance)
+			OM = TM * RM
+			step = pitch = yaw = roll = 0*/
+		glm::vec3 zWarbird = glm::vec3(orientationMatrix[0][2], orientationMatrix[0][1] * -1, orientationMatrix[0][0] * -1);
+		zWarbird = glm::normalize(zWarbird);
+		distance = glm::vec3(0,0, step * stepDistance);
+		axis = glm::vec3(pitch, yaw, roll);
+		//showMat4("warbird", rotationMatrix);
+		if (axis != glm::vec3(0))
+			rotationMatrix = glm::rotate(rotationMatrix, radians, axis);
+		//showMat4("warbird", rotationMatrix);
+		translationMatrix = glm::translate(translationMatrix, distance);
+		orientationMatrix = translationMatrix * rotationMatrix;
+		step = pitch = roll = yaw = 0;
 
 	}
 
-	glm::mat4 Warbird::getWarbirdMatrix(void)
+
+	glm::mat4 Warbird::getModelMatrix(void)
 	{
-		return warbirdModelMatrix;
+		return translationMatrix * rotationMatrix * scaleMatrix;
+
+	}
+
+	glm::mat4 Warbird::getTranslationMatrix(void)
+	{
+		return translationMatrix;
+
+	}
+
+	glm::mat4 getDirectionMatrix(const glm::vec3& object, const glm::vec3& target) {
+		glm::vec3 up;
+		glm::vec3 direction(glm::normalize(target - object));
+		up = glm::vec3(0.0, 1.0, 0.0);
+		up = glm::normalize(up);
+
+		glm::vec3 right = glm::normalize(glm::cross(up, direction));
+		up = glm::normalize(glm::cross(direction, right));
+
+		return glm::mat4(right.x, right.y, right.z, 0.0f,
+			up.x, up.y, up.z, 0.0f,
+			direction.x, direction.y, direction.z, 0.0f,
+			object.x, object.y, object.z, 1.0f);
 	}
 
 };

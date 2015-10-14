@@ -34,13 +34,11 @@ public:
 	// the model's file
 	char * modelFile;
 	bool isDuo = false;
-	glm::mat4 duoTranslate = glm::translate(glm::mat4(), glm::vec3(9000, 0, 0));
 
 	glm::mat4 rotationMatrix;
 	glm::mat4 scaleMatrix;
 	glm::mat4 translationMatrix;
 	glm::vec3 rotationAxis = glm::vec3(0.0, 1.0, 0.0);
-	glm::mat4 DuoRotation = glm::rotate(glm::mat4(1.0), PI, glm::vec3(0, 1, 0));
 
 	Object3D(){}
 
@@ -63,19 +61,9 @@ public:
 	}
 
 	void update() {
-		if (isDuo)
-		{
-			rotationMatrix = glm::rotate(rotationMatrix, rotation, rotationAxis) * DuoRotation;
-			isDuo = false;
-		}
-		else
-		{
+		
 			rotationMatrix = glm::rotate(rotationMatrix, rotation, rotationAxis);
-		}
+
 	}
 
-	void Duo(void)
-	{
-		this->isDuo = true;
-	}
 };

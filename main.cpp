@@ -66,6 +66,8 @@ bool cameraShip = false;
 bool cameraUnum = false;
 bool cameraDuo = false;
 
+bool atUnum = false;
+
 //debug boolean
 bool debug = false;
 
@@ -153,61 +155,68 @@ void updateTitle() {
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	// update model matrix
-	//ruber->createModelMatrix();
-	//unum->createModelMatrix();
-	//duo->createModelMatrix();
-	//primus->createModelMatrix();
-	//secundus->createModelMatrix();
-	warbird->createModelMatrix();
+	
 	missle->createModelMatrix();
 
 	modelMatrix[0] = ruber->getModelMatrix();
 	modelMatrix[1] = unum->getModelMatrix();
 	modelMatrix[2] = duo->getModelMatrix();
-	modelMatrix[3] = glm::translate(glm::mat4(), glm::vec3(duo->getModelMatrix()[3])) * primus->getModelMatrix();
-	modelMatrix[4] = glm::translate(glm::mat4(), glm::vec3(duo->getModelMatrix()[3])) * secundus->getModelMatrix();
-	modelMatrix[5] = warbird->getWarbirdMatrix();
+	modelMatrix[3] = primus->Moon(duo->getModelMatrix(), primus->getModelMatrix());
+	modelMatrix[4] = secundus->Moon(duo->getModelMatrix(), secundus->getModelMatrix());
+	modelMatrix[5] = warbird->getModelMatrix();
 	modelMatrix[6] = missle->getMissleMatrix();
 
 	//showMat4("duo", modelMatrix[2]);
 
 	for (int m = 0; m < nModels; m++) {
 		//dynamic cameras
-			//Unum camera
-			if (toggleCam == 4)
-			{
-				//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
-				glm::vec3 zUnum = glm::vec3(unum->getModelMatrix()[0][2], unum->getModelMatrix()[0][1] * -1, unum->getModelMatrix()[0][0] * -1);
-				zUnum = glm::normalize(zUnum);
-				camera[3]->eye = glm::vec3(unum->getModelMatrix()[3]) + zUnum * 4000.0f;        // camera is 4000 units out along Unum's -z axis        
-				camera[3]->at = glm::vec3(unum->getModelMatrix()[3]);							// camera is looking at Unum
-				camera[3]->up = glm::vec3(0.0f, 1.0f, 0.0f);             // camera's up is Y
-				viewMatrix = camera[3]->getViewMatrix();
-			}
-			//Duo camera
-			if (toggleCam == 5)
-			{
-				//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
-				glm::vec3 zDuo = glm::vec3(duo->getModelMatrix()[0][2], duo->getModelMatrix()[0][1] * -1, duo->getModelMatrix()[0][0] * -1);
-				//showVec3("Duo", zDuo);
-				zDuo = glm::normalize(zDuo);
-				camera[4]->eye = glm::vec3(duo->getModelMatrix()[3]) + zDuo * 4000.0f;				// camera is 4000 units out along Duo's -z axis
-				camera[4]->at = glm::vec3(duo->getModelMatrix()[3]);								// camera is looking at Duo
-				camera[4]->up = glm::vec3(0.0f, 1.0f, 0.0f);                 // camera's up is Y
-				viewMatrix = camera[4]->getViewMatrix();
-			}
-
-			// glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr( modelMatrix)); 
-			ModelViewProjectionMatrix = projectionMatrix * viewMatrix * modelMatrix[m];
-			glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
-			glBindVertexArray(VAO[m]);
-			/*  The following 3 lines are not needed !
-			glEnableVertexAttribArray( vPosition[m] );
-			glEnableVertexAttribArray( vColor[m] );
-			glEnableVertexAttribArray( vNormal[m] );
-			*/
-			glDrawArrays(GL_TRIANGLES, 0, nVertices[m]);
+		if (toggleCam == 3)
+		{
+			//(glm::vec3(5000.0f, 1300.0f, 6000.0f), glm::vec3(5000.0f, 1000.0f, 5000.0f), glm::vec3(0.0f, 1.0f, 0.0f)
+			glm::vec3 zWarbird = glm::vec3(modelMatrix[5][0][2] * -1, modelMatrix[5][0][1], modelMatrix[5][0][0]);
+			zWarbird = glm::normalize(zWarbird);
+			glm::vec3 upWarbird = glm::vec3(modelMatrix[5][1]);
+			upWarbird = glm::normalize(upWarbird);
+			camera[2]->eye = glm::vec3(modelMatrix[5][3]) + upWarbird * 300.0f + zWarbird * 1000.0f;
+			camera[2]->at = glm::vec3(modelMatrix[5][3]);
+			camera[2]->up = glm::vec3(0.0f, 1.0f, 0.0f);
+			viewMatrix = camera[2]->getViewMatrix();
 		}
+		//Unum camera
+		if (toggleCam == 4)
+		{
+			//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
+			glm::vec3 zUnum = glm::vec3(unum->getModelMatrix()[0][2], unum->getModelMatrix()[0][1] * -1, unum->getModelMatrix()[0][0] * -1);
+			zUnum = glm::normalize(zUnum);
+			camera[3]->eye = glm::vec3(unum->getModelMatrix()[3]) + zUnum * 4000.0f;        // camera is 4000 units out along Unum's -z axis        
+			camera[3]->at = glm::vec3(unum->getModelMatrix()[3]);							// camera is looking at Unum
+			camera[3]->up = glm::vec3(0.0f, 1.0f, 0.0f);             // camera's up is Y
+			viewMatrix = camera[3]->getViewMatrix();
+		}
+		//Duo camera
+		if (toggleCam == 5)
+		{
+			//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
+			glm::vec3 zDuo = glm::vec3(duo->getModelMatrix()[0][2], duo->getModelMatrix()[0][1] * -1, duo->getModelMatrix()[0][0] * -1);
+			//showVec3("Duo", zDuo);
+			zDuo = glm::normalize(zDuo);
+			camera[4]->eye = glm::vec3(duo->getModelMatrix()[3]) + zDuo * 4000.0f;				// camera is 4000 units out along Duo's -z axis
+			camera[4]->at = glm::vec3(duo->getModelMatrix()[3]);								// camera is looking at Duo
+			camera[4]->up = glm::vec3(0.0f, 1.0f, 0.0f);                 // camera's up is Y
+			viewMatrix = camera[4]->getViewMatrix();
+		}
+
+		// glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr( modelMatrix)); 
+		ModelViewProjectionMatrix = projectionMatrix * viewMatrix * modelMatrix[m];
+		glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
+		glBindVertexArray(VAO[m]);
+		/*  The following 3 lines are not needed !
+		glEnableVertexAttribArray( vPosition[m] );
+		glEnableVertexAttribArray( vColor[m] );
+		glEnableVertexAttribArray( vNormal[m] );
+		*/
+		glDrawArrays(GL_TRIANGLES, 0, nVertices[m]);
+	}
 
 	//for (int m = 0; m < nModels; m++) {
 	//	if (m == 1) //Unum orbits Ruber
@@ -313,6 +322,7 @@ void update(void){
 	duo->update();
 	primus->update();
 	secundus->update();
+	warbird->update();
 	glutPostRedisplay();
 }
 
@@ -340,7 +350,7 @@ void keyboard(unsigned char key, int x, int y) {
 		break;*/
 
 	case 'v': case 'V': //toggle camera
-		if (toggleCam == 5)
+		if (toggleCam == nCameras)
 			toggleCam = 0;
 		viewMatrix = camera[toggleCam]->getViewMatrix();
 		strcpy(viewStr, camera[toggleCam]->getCameraString());
@@ -396,6 +406,45 @@ void keyboard(unsigned char key, int x, int y) {
 		}*/
 
 		break;
+
+	case 's': case 'S':  // toggle ship speed
+
+		if (warbird->stepDistance == 10)
+		{
+			warbird->stepDistance = 50;
+		}
+		else if (warbird->stepDistance == 50)
+		{
+			warbird->stepDistance = 200;
+		}
+		else
+			warbird->stepDistance = 10;
+
+		break;
+
+	case 'w': case 'W' : //warp the ship to Unum or Duo
+
+		if (!atUnum) // warp to Unum
+		{
+			glm::vec3 zUnum = glm::vec3(unum->getModelMatrix()[0][2], unum->getModelMatrix()[0][1] * -1, unum->getModelMatrix()[0][0] * -1);
+			zUnum = glm::normalize(zUnum);
+			warbird->translationMatrix = glm::translate(glm::mat4(1.0), glm::vec3(unum->getModelMatrix()[3]) + zUnum * 4000.0f);
+			warbird->translationMatrix = warbird->getDirectionMatrix(glm::vec3(warbird->translationMatrix[3]), glm::vec3(unum->getModelMatrix()[3]));
+			warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));
+			atUnum = true;
+		}
+		else //warp to Duo
+		{
+			glm::vec3 zDuo = glm::vec3(duo->getModelMatrix()[0][2], duo->getModelMatrix()[0][1] * -1, duo->getModelMatrix()[0][0] * -1);
+			zDuo = glm::normalize(zDuo);
+			warbird->translationMatrix = glm::translate(glm::mat4(1.0), glm::vec3(duo->getModelMatrix()[3]) + zDuo * 4000.0f);
+			warbird->translationMatrix = warbird->getDirectionMatrix(glm::vec3(warbird->translationMatrix[3]), glm::vec3(duo->getModelMatrix()[3]));
+			warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));
+			atUnum = false;
+		}
+
+		break;
+
 	case 'd': case 'D':  // debug case, not fully implemented yet
 
 		if (!debug)
@@ -410,6 +459,39 @@ void keyboard(unsigned char key, int x, int y) {
 		break;
 	}
 	updateTitle();
+}
+
+
+void specialKeyEvent(int key, int x, int y) {
+	//if (key == GLUT_KEY_UP && glutGetModifiers() !=
+	//	GLUT_ACTIVE_CTRL) player->setMove(1);
+	//else if (key == GLUT_KEY_DOWN && glutGetModifiers() !=
+	//	GLUT_ACTIVE_CTRL) player->setMove(-1);
+	//...
+	//else if (key == GLUT_KEY_UP && glutGetModifiers() ==
+	//GLUT_ACTIVE_CTRL) player->setPitch(1);
+	//else if (key == GLUT_KEY_DOWN && glutGetModifiers() ==
+	//	GLUT_ACTIVE_CTRL) player->setPitch(-1);
+	//...
+
+	if (key == GLUT_KEY_UP && glutGetModifiers() != GLUT_ACTIVE_CTRL) 
+		warbird->setMove(-1);
+	else if (key == GLUT_KEY_DOWN && glutGetModifiers() != GLUT_ACTIVE_CTRL)
+		warbird->setMove(1);
+	else if (key == GLUT_KEY_LEFT && glutGetModifiers() != GLUT_ACTIVE_CTRL)
+		warbird->setYaw(1);
+	else if (key == GLUT_KEY_RIGHT && glutGetModifiers() != GLUT_ACTIVE_CTRL)
+		warbird->setYaw(-1);
+	else if (key == GLUT_KEY_UP && glutGetModifiers() == GLUT_ACTIVE_CTRL)
+		warbird->setPitch(-1);
+	else if (key == GLUT_KEY_DOWN && glutGetModifiers() == GLUT_ACTIVE_CTRL)
+		warbird->setPitch(1);
+	else if (key == GLUT_KEY_LEFT && glutGetModifiers() == GLUT_ACTIVE_CTRL)
+		warbird->setRoll(-1);
+	else if (key == GLUT_KEY_RIGHT && glutGetModifiers() == GLUT_ACTIVE_CTRL)
+		warbird->setRoll(1);
+	else
+		;
 }
 
 // load the shader programs, vertex data from model files, create the solids, set initial view
@@ -446,7 +528,7 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	ruber = new Planet(glm::vec3(0, 0, 0), scale[0], 264 * 3, 0.0f, 2000.0f, "Ruber.tri");
 	unum = new Planet(glm::vec3(4000, 0, 0), scale[1], 264 * 3, 0.004f, 200.0f, "Unum.tri");
 	duo = new Planet(glm::vec3(9000, 0, 0), scale[2], 278 * 3, 0.002f, 400.0f, "Duo.tri");
-	duo->Duo();
+	duo->DuoRotate180();
 	primus = new Planet(glm::vec3(900, 0, 0), scale[3], 264 * 3, 0.004f, 100.0f, "Primus.tri");
 	secundus = new Planet(glm::vec3(1750, 0, 0), scale[4], 264 * 3, 0.002f, 150.0f, "Secundus.tri");
 	warbird = new Warbird(glm::vec3(5000, 1000, 5000), scale[5], 2772 * 3, 100.0f, "Warbird.tri");
@@ -460,8 +542,8 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	//up = glm::vec3(0.0f, 1.0f, 0.0f);            // camera'a up vector
 
 	camera[0] = new Camera(glm::vec3(0.0f, 10000.0f, 20000.0f), glm::vec3(0), glm::vec3(0.0f, 1.0f, 0.0f), 0, " View Front");
-	camera[1] = new Camera(glm::vec3(0.0f, 20000.0f, 0.0f), glm::vec3(0), glm::vec3(0.0f, 0.0f, -1.0f), 0, " View Top");
-	camera[2] = new Camera(glm::vec3(5000.0f, 1300.0f, 6000.0f), glm::vec3(5000.0f, 1000.0f, 5000.0f), glm::vec3(0.0f, 1.0f, 0.0f), 0, " View Warbird");
+	camera[1] = new Camera(glm::vec3(0.0f, 15000.0f, 0.0f), glm::vec3(0), glm::vec3(0.0f, 0.0f, -1.0f), 0, " View Top");
+	camera[2] = new Camera(glm::vec3(0), glm::vec3(0), glm::vec3(0), 0, " View Warbird");
 	camera[3] = new Camera(glm::vec3(0), glm::vec3(0), glm::vec3(0), 0, " View Unum");
 	camera[4] = new Camera(glm::vec3(0), glm::vec3(0), glm::vec3(0), 0, " View Duo");
 
@@ -499,6 +581,7 @@ int main(int argc, char* argv[]) {
 	glutDisplayFunc(display);
 	glutReshapeFunc(reshape);
 	glutKeyboardFunc(keyboard);
+	glutSpecialFunc(specialKeyEvent);
 	glutIdleFunc(NULL);  // start with intervalTimer
 	glutTimerFunc(timerDelay, intervalTimer, 1);
 	glutMainLoop();

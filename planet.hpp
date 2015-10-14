@@ -46,11 +46,26 @@ public:
 
 	Planet(glm::vec3 translate, glm::vec3 scale, int vertices, float rotation, float radius, char * modelFile) : Object3D(translate, scale,  vertices, rotation, radius, modelFile)
 	{
-		
+		this->translate = translate;
+		this->scale = scale;
+		this->vertices = vertices;
+		this->rotation = rotation;
+		this->radius = radius;
+		this->modelFile = modelFile;
 
 	}
 
-	void Planet::createModelMatrix(void)
+	void DuoRotate180(void)
+	{
+		rotationMatrix = glm::rotate(rotationMatrix, rotation, rotationAxis) * glm::rotate(glm::mat4(1.0), PI, glm::vec3(0, 1, 0));
+	}
+
+	glm::mat4 Moon(glm::mat4 &planetMatrix, glm::mat4 &moonMatrix)
+	{
+		return glm::translate(glm::mat4(), glm::vec3(planetMatrix[3])) * moonMatrix;
+	}
+
+	/*void Planet::createModelMatrix(void)
 	{
 		planetModelMatrix = planetRotationMatrix * glm::translate(glm::mat4(), translate) *
 			glm::scale(glm::mat4(), scale);
@@ -69,7 +84,7 @@ public:
 	glm::mat4 Planet::getPlanetMatrix(void)
 	{
 		return planetModelMatrix;
-	}
+	}*/
 
 
 };
