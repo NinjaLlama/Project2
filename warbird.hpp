@@ -32,7 +32,7 @@ private:
 	int pitch, roll, yaw = 0;
 	float radians = 0;
 	glm::vec3 axis;
-	glm::vec3 distance;
+	float distance;
 
 	/*// has OM an OrientationMatrix stores update
 // has RM rotation and TM translation matrices, why 2 ?
@@ -100,13 +100,13 @@ public:
 			step = pitch = yaw = roll = 0*/
 		glm::vec3 zWarbird = glm::vec3(orientationMatrix[0][2], orientationMatrix[0][1] * -1, orientationMatrix[0][0] * -1);
 		zWarbird = glm::normalize(zWarbird);
-		distance = glm::vec3(0,0, step * stepDistance);
+		distance = step * stepDistance;
 		axis = glm::vec3(pitch, yaw, roll);
 		//showMat4("warbird", rotationMatrix);
 		if (axis != glm::vec3(0))
 			rotationMatrix = glm::rotate(rotationMatrix, radians, axis);
 		//showMat4("warbird", rotationMatrix);
-		translationMatrix = glm::translate(translationMatrix, distance);
+		translationMatrix = glm::translate(translationMatrix, zWarbird * distance);
 		orientationMatrix = translationMatrix * rotationMatrix;
 		step = pitch = roll = yaw = 0;
 
@@ -138,6 +138,16 @@ public:
 			up.x, up.y, up.z, 0.0f,
 			direction.x, direction.y, direction.z, 0.0f,
 			object.x, object.y, object.z, 1.0f);
+	}
+
+	float angleBetween(
+		glm::vec3 a,
+		glm::vec3 b,
+		glm::vec3 origin
+		){
+		glm::vec3 da = glm::normalize(a - origin);
+		glm::vec3 db = glm::normalize(b - origin);
+		return acos(glm::dot(da, db));
 	}
 
 };
