@@ -424,16 +424,13 @@ void keyboard(unsigned char key, int x, int y) {
 			warbird->rotationMatrix = identity;
 			warbird->translationMatrix = glm::translate(glm::mat4(), glm::vec3(0));
 			warbird->translationMatrix = warbird->translationMatrix * glm::translate(identity, glm::vec3(unum->getModelMatrix()[3]) + zUnum * 4000.0f);
-			//warbird->translationMatrix = warbird->getDirectionMatrix(glm::vec3(warbird->translationMatrix[3]), glm::vec3(unum->getModelMatrix()[3]));
-			//warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));
-			/*float angle = acos(glm::dot(glm::vec3(warbird->translationMatrix[3]), glm::vec3(unum->getModelMatrix()[3])) 
-				/ glm::sqrt(glm::length(glm::vec3(warbird->translationMatrix[3]))*glm::length(glm::vec3(unum->getModelMatrix()[3]))));
-			if (angle > PI)
-				angle = 2 * PI - acos(angle);*/
-			float angle = warbird->angleBetween(glm::vec3(-warbird->translationMatrix[2]), glm::vec3(-unum->getModelMatrix()[2]), glm::vec3(0));
-			if (angle > PI)
+			float angle = warbird->angleBetween(glm::vec3(warbird->translationMatrix[2]), glm::vec3(unum->getModelMatrix()[2]), glm::vec3(0));
+			//showMat4("umum: ", unum->getModelMatrix());
+			if (unum->getModelMatrix()[3][2] > 0)
+			{
 				angle = 2 * PI - angle;
-			printf("angle %f", angle);
+			}
+			//printf("angle %f", angle);
 			warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, angle + PI, glm::vec3(0, 1, 0));
 			atUnum = true;
 		}
@@ -443,8 +440,14 @@ void keyboard(unsigned char key, int x, int y) {
 			zDuo = glm::normalize(zDuo);
 			warbird->rotationMatrix = identity;
 			warbird->translationMatrix = glm::translate(identity, glm::vec3(duo->getModelMatrix()[3]) + zDuo * 4000.0f);
-			warbird->translationMatrix = warbird->getDirectionMatrix(glm::vec3(warbird->translationMatrix[3]), glm::vec3(duo->getModelMatrix()[3]));
-			warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));
+			/*warbird->translationMatrix = warbird->getDirectionMatrix(glm::vec3(warbird->translationMatrix[3]), glm::vec3(duo->getModelMatrix()[3]));
+			warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));*/
+			float angle = warbird->angleBetween(glm::vec3(warbird->translationMatrix[2]), glm::vec3(duo->getModelMatrix()[2]), glm::vec3(0));
+			if (duo->getModelMatrix()[3][2] > 0)
+			{
+				angle = 2 * PI - angle;
+			}
+			warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, angle + PI, glm::vec3(0, 1, 0));
 			atUnum = false;
 		}
 
