@@ -38,6 +38,7 @@ and make sure 'Single Startup Project' is selected ***
 # include "missle.hpp"
 # include "camera.hpp"
 
+
 const int X = 0, Y = 1, Z = 2, W = 3, START = 0, STOP = 1;
 // constants for models:  file names, vertex count, model display size
 const int nModels = 8;  // number of models in this scene
@@ -125,6 +126,8 @@ glm::mat4 modelMatrix[nModels];          // set in display()
 glm::mat4 viewMatrix;           // set in init()
 glm::mat4 projectionMatrix;     // set in reshape()
 glm::mat4 ModelViewProjectionMatrix; // set in display();
+
+
 
 
 void reshape(int width, int height) {
@@ -306,8 +309,15 @@ void update(void){
 	secundus->update();
 	warbird->update();
 	axes->update();
+	//if peron presses f then the fire missle function is called
+	missle->update();
+
 	glutPostRedisplay();
+
 }
+
+
+
 
 // Estimate FPS, use for fixed interval timer driven animation
 void intervalTimer(int i) {
@@ -451,6 +461,14 @@ void keyboard(unsigned char key, int x, int y) {
 			atUnum = false;
 		}
 
+		break;
+
+		//fires the ships missles
+		//work in progress...
+	case 'f': case 'F':
+	
+		//missle->update();
+		
 		break;
 
 	case 'd': case 'D':  // debug case, not fully implemented yet
