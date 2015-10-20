@@ -85,9 +85,14 @@ GLfloat rotateRadianTwo = 0.0f;
 glm::mat4 identity(1.0f);
 glm::mat4 rotationOne;  // the modelMatrix
 glm::mat4 rotationTwo;
-int timerDelay = 40, frameCount = 0;  //set to 25 fps
+//update rate: ace, pilot, trainee, debug
+int timerDelay[] = { 40, 100, 250, 500 };
+int nTimers = 4;
+int timer = 0;
+int frameCount = 0;  // for idle fps
 double currentTime, lastTime, timeInterval;
-bool idleTimerFlag = false;  // interval or idle timer ? - not currently implemented
+int updateCount = 0;  // for update rate
+double currentUpdateTime, lastUpdateTime, timeIntervalUpdate;
 
 // Shader handles, matrices, etc
 GLuint MVP;  // Model View Projection matrix's handle
@@ -286,7 +291,6 @@ void display() {
 	timeInterval = currentTime - lastTime;
 	if (timeInterval >= 1000) {
 		sprintf(fpsStr, "  F/S %4d", (int)(frameCount / (timeInterval / 1000.0f)));
-		sprintf(updateStr, "  U/S %4d", (int)(frameCount / (timeInterval / 1000.0f)));
 		lastTime = currentTime;
 		frameCount = 0;
 		updateTitle();
@@ -311,7 +315,16 @@ void update(void){
 	axes->update();
 	//if peron presses f then the fire missle function is called
 	missle->update();
-
+	updateCount++;
+	// see if a second has passed to set estimated fps information
+	currentUpdateTime = glutGet(GLUT_ELAPSED_TIME);  // get elapsed system time
+	timeIntervalUpdate = currentUpdateTime - lastUpdateTime;
+	if (timeIntervalUpdate >= 1000) {
+		sprintf(updateStr, "  U/S %4d", (int)(updateCount / (timeIntervalUpdate / 1000.0f)));
+		lastUpdateTime = currentUpdateTime;
+		updateCount = 0;
+		updateTitle();
+	}
 	glutPostRedisplay();
 
 }
@@ -321,26 +334,20 @@ void update(void){
 
 // Estimate FPS, use for fixed interval timer driven animation
 void intervalTimer(int i) {
-	glutTimerFunc(timerDelay, intervalTimer, 1);
-	if (!idleTimerFlag) update();  // fixed interval timer
+	glutTimerFunc(timerDelay[timer], intervalTimer, 1);
+	update();  // fixed interval timer
 }
 
 void keyboard(unsigned char key, int x, int y) {
 	switch (key) {
 	case 033: case 'q':  case 'Q': exit(EXIT_SUCCESS); break;
-		/*case 'a': case 'A':  // change animation timer
-		// printf("%s   %s\n", updateStr, fpsStr);
-		if (idleTimerFlag) { // switch to interval timer
-		glutIdleFunc(NULL);
-		strcpy(updateStr, " interval timer");
-		idleTimerFlag = false;
-		}
-		else   {         // switch to idle timer
-		glutIdleFunc(update);
-		strcpy(updateStr, " idle timer");
-		idleTimerFlag = true;
-		}
-		break;*/
+		
+	case 't': case 'T': //toggle update rate
+		timer++;
+		if (timer == nTimers)
+			timer = 0;
+			
+		break;
 
 	case 'v': case 'V': //toggle camera
 		if (cycleForward)
@@ -620,8 +627,8 @@ int main(int argc, char* argv[]) {
 	glutReshapeFunc(reshape);
 	glutKeyboardFunc(keyboard);
 	glutSpecialFunc(specialKeyEvent);
-	glutIdleFunc(NULL);  // start with intervalTimer
-	glutTimerFunc(timerDelay, intervalTimer, 1);
+	glutIdleFunc(display);  
+	glutTimerFunc(timerDelay[timer], intervalTimer, 1);
 	glutMainLoop();
 	printf("done\n");
 	return 0;
