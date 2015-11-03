@@ -125,7 +125,7 @@ Planet * primus;
 Planet * secundus;
 Warbird * warbird;
 Warbird * axes;
-Missle * missle;
+Missle * missile;
 
 glm::mat4 modelMatrix[nModels];          // set in display()
 glm::mat4 viewMatrix;           // set in init()
@@ -162,7 +162,6 @@ void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	// update model matrix
 	
-	missle->createModelMatrix();
 
 	modelMatrix[0] = ruber->getModelMatrix();
 	modelMatrix[1] = unum->getModelMatrix();
@@ -170,7 +169,7 @@ void display() {
 	modelMatrix[3] = primus->Moon(duo->getModelMatrix(), primus->getModelMatrix());
 	modelMatrix[4] = secundus->Moon(duo->getModelMatrix(), secundus->getModelMatrix());
 	modelMatrix[5] = warbird->getModelMatrix();
-	modelMatrix[6] = missle->getMissleMatrix();
+	modelMatrix[6] = missile->getModelMatrix();
 
 	//showMat4("duo", modelMatrix[2]);
 	if (debug)
@@ -314,7 +313,7 @@ void update(void){
 	warbird->update();
 	axes->update();
 	//if peron presses f then the fire missle function is called
-	missle->update();
+	missile->update();
 	updateCount++;
 	// see if a second has passed to set estimated fps information
 	currentUpdateTime = glutGet(GLUT_ELAPSED_TIME);  // get elapsed system time
@@ -438,33 +437,34 @@ void keyboard(unsigned char key, int x, int y) {
 		{
 			glm::vec3 zUnum = glm::vec3(unum->getModelMatrix()[0][2], unum->getModelMatrix()[0][1] * -1, unum->getModelMatrix()[0][0] * -1);
 			zUnum = glm::normalize(zUnum);
-			warbird->rotationMatrix = identity;
-			warbird->translationMatrix = glm::translate(glm::mat4(), glm::vec3(0));
-			warbird->translationMatrix = warbird->translationMatrix * glm::translate(identity, glm::vec3(unum->getModelMatrix()[3]) + zUnum * 4000.0f);
-			float angle = warbird->angleBetween(glm::vec3(warbird->translationMatrix[2]), glm::vec3(unum->getModelMatrix()[2]), glm::vec3(0));
-			//showMat4("umum: ", unum->getModelMatrix());
-			if (unum->getModelMatrix()[3][2] > 0)
-			{
-				angle = 2 * PI - angle;
-			}
-			//printf("angle %f", angle);
-			warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, angle + PI, glm::vec3(0, 1, 0));
+			warbird->rotationMatrix = unum->rotationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));
+			warbird->translationMatrix = glm::translate(identity, glm::vec3(unum->getModelMatrix()[3]) + zUnum * 4000.0f);
+			//float angle = warbird->angleBetween(glm::vec3(warbird->translationMatrix[2]), glm::vec3(unum->getModelMatrix()[2]), glm::vec3(0));
+			////showMat4("umum: ", unum->getModelMatrix());
+			//if (unum->getModelMatrix()[3][2] > 0)
+			//{
+			//	angle = 2 * PI - angle;
+			//}
+			////printf("angle %f", angle);
+			//warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));
+			showMat4("warbird", warbird->getModelMatrix());
+			showMat4("unum", unum->getModelMatrix());
 			atUnum = true;
 		}
 		else //warp to Duo
 		{
 			glm::vec3 zDuo = glm::vec3(duo->getModelMatrix()[0][2], duo->getModelMatrix()[0][1] * -1, duo->getModelMatrix()[0][0] * -1);
 			zDuo = glm::normalize(zDuo);
-			warbird->rotationMatrix = identity;
+			warbird->rotationMatrix = duo->rotationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));;
 			warbird->translationMatrix = glm::translate(identity, glm::vec3(duo->getModelMatrix()[3]) + zDuo * 4000.0f);
 			/*warbird->translationMatrix = warbird->getDirectionMatrix(glm::vec3(warbird->translationMatrix[3]), glm::vec3(duo->getModelMatrix()[3]));
 			warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));*/
-			float angle = warbird->angleBetween(glm::vec3(warbird->translationMatrix[2]), glm::vec3(duo->getModelMatrix()[2]), glm::vec3(0));
+			/*float angle = warbird->angleBetween(glm::vec3(warbird->translationMatrix[2]), glm::vec3(duo->getModelMatrix()[2]), glm::vec3(0));
 			if (duo->getModelMatrix()[3][2] > 0)
 			{
 				angle = 2 * PI - angle;
 			}
-			warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, angle + PI, glm::vec3(0, 1, 0));
+			warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, angle + PI, glm::vec3(0, 1, 0));*/
 			atUnum = false;
 		}
 
@@ -577,7 +577,9 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	secundus = new Planet(glm::vec3(1750, 0, 0), scale[4], 264 * 3, 0.002f, 150.0f, "Secundus.tri");
 	warbird = new Warbird(glm::vec3(5000, 1000, 5000), scale[5], 2772 * 3, 100.0f, "Warbird.tri");
 	axes = new Warbird(glm::vec3(5000, 1000, 5000), scale[7], 120 * 3, 100.0f, "axes-r100.tri");
-	missle = new Missle(glm::vec3(4900, 1000, 4850), scale[6], 644 * 3, 25.0f, "Missle.tri");
+	missile = new Missle(glm::vec3(4900, 1000, 4850), scale[6], 644 * 3, 0.0f, 25.0f, "Missle.tri");
+
+	missile->setMissleScale(glm::vec3(50.0));
 
 	MVP = glGetUniformLocation(shaderProgram, "ModelViewProjection");
 
@@ -593,6 +595,7 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	camera[4] = new Camera(glm::vec3(0), glm::vec3(0), glm::vec3(0), 0, " View Duo");
 
 	viewMatrix = camera[0]->getViewMatrix();
+	showMat4("front view: ", viewMatrix);
 	toggleCam++;
 
 	// set render state values

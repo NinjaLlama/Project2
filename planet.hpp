@@ -65,6 +65,16 @@ public:
 		return glm::translate(glm::mat4(), glm::vec3(planetMatrix[3])) * moonMatrix;
 	}
 
+	glm::mat4 getModelMatrix() {
+		return(rotationMatrix * translationMatrix * scaleMatrix);
+	}
+
+	void update() {
+
+		rotationMatrix = glm::rotate(rotationMatrix, rotation, rotationAxis);
+
+	}
+
 	/*void Planet::createModelMatrix(void)
 	{
 		planetModelMatrix = planetRotationMatrix * glm::translate(glm::mat4(), translate) *

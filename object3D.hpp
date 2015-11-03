@@ -56,14 +56,6 @@ public:
 		translationMatrix = glm::translate(glm::mat4(), translate);
 	}
 
-	glm::mat4 getModelMatrix() {
-	return(rotationMatrix * translationMatrix * scaleMatrix);
-	}
 
-	void update() {
-		
-			rotationMatrix = glm::rotate(rotationMatrix, rotation, rotationAxis);
-
-	}
 
 };
