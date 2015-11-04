@@ -66,6 +66,8 @@ bool cycleBackward = false;
 
 bool atUnum = false;
 
+bool collide = false;
+
 //debug boolean
 bool debug = false;
 
@@ -99,7 +101,7 @@ GLuint MVP;  // Model View Projection matrix's handle
 GLuint vPosition[nModels], vColor[nModels], vNormal[nModels];   // vPosition, vColor, vNormal handles for models
 // model, view, projection matrices and values to create modelMatrix.
 //loaded in order of Ruber, Umun, Duo, Primus, Secundus, Warbird, missiles
-float modelSize[nModels] = { 2000.0f, 200.0f, 400.0f, 100.0f, 150.0f, 500.0f, 25.0f, 500.0f };   // size of model
+float modelSize[nModels] = { 2000.0f, 200.0f, 400.0f, 100.0f, 150.0f, 100.0f, 25.0f, 500.0f };   // size of model
 glm::vec3 scale[nModels];       // set in init()
 glm::vec3 translate[nModels] = { glm::vec3(0, 0, 0), glm::vec3(4000, 0, 0), glm::vec3(9000, 0, 0),
 glm::vec3(900, 0, 0), glm::vec3(1750, 0, 0),
@@ -154,7 +156,28 @@ void updateTitle() {
 	strcat(titleStr, fpsStr);
 	strcat(titleStr, viewStr);
 	//printf("title string = %s \n", titleStr);
+	if (collide)
+		strcpy(titleStr, "Collision!");
 	glutSetWindowTitle(titleStr);
+}
+
+bool collision(glm::mat4 object1, glm::mat4 object2, float radius1, float radius2)
+{
+	bool collision = false;
+	glm::vec3 position1 = glm::vec3(object1[3]);
+	glm::vec3 position2 = glm::vec3(object2[3]);
+
+	float distance = pow(abs(position1.x - position2.x), 2) + pow(abs(position1.y - position2.y), 2) + pow(abs(position1.z - position2.z), 2);
+
+	float sumRadius = (radius1 + radius2)*(radius1 + radius2);
+
+	printf("%f, %f\n", distance, sumRadius);
+
+	if (distance < sumRadius)
+		collision = true;
+	else
+		collision = false;
+	return collision;
 }
 
 
@@ -177,16 +200,17 @@ void display() {
 		modelMatrix[7] = warbird->getModelMatrix();
 		for (int m = 0; m < nModels; m++) {
 			//dynamic cameras
+			//warbird camera
 			if (cycleForward && toggleCam == 3 || cycleBackward && toggleCam == 2)
 			{
 				//(glm::vec3(5000.0f, 1300.0f, 6000.0f), glm::vec3(5000.0f, 1000.0f, 5000.0f), glm::vec3(0.0f, 1.0f, 0.0f)
-				glm::vec3 zWarbird = glm::vec3(modelMatrix[5][0][2] * -1, modelMatrix[5][0][1], modelMatrix[5][0][0]);
+				glm::vec3 zWarbird = glm::vec3(modelMatrix[5][2][0], modelMatrix[5][2][1], modelMatrix[5][2][2]);
 				zWarbird = glm::normalize(zWarbird);
 				glm::vec3 upWarbird = glm::vec3(modelMatrix[5][1]);
 				upWarbird = glm::normalize(upWarbird);
 				camera[2]->eye = glm::vec3(modelMatrix[5][3]) + upWarbird * 300.0f + zWarbird * 1000.0f;
 				camera[2]->at = glm::vec3(modelMatrix[5][3]);
-				camera[2]->up = glm::vec3(0.0f, 1.0f, 0.0f);
+				camera[2]->up = upWarbird;
 				viewMatrix = camera[2]->getViewMatrix();
 			}
 			//Unum camera
@@ -231,16 +255,17 @@ void display() {
 	{
 		for (int m = 0; m < nModels-1; m++) {
 			//dynamic cameras
+			//warbird camera
 			if (cycleForward && toggleCam == 3 || cycleBackward && toggleCam == 2)
 			{
 				//(glm::vec3(5000.0f, 1300.0f, 6000.0f), glm::vec3(5000.0f, 1000.0f, 5000.0f), glm::vec3(0.0f, 1.0f, 0.0f)
-				glm::vec3 zWarbird = glm::vec3(modelMatrix[5][0][2] * -1, modelMatrix[5][0][1], modelMatrix[5][0][0]);
+				glm::vec3 zWarbird = glm::vec3(modelMatrix[5][2][0], modelMatrix[5][2][1], modelMatrix[5][2][2]);
 				zWarbird = glm::normalize(zWarbird);
 				glm::vec3 upWarbird = glm::vec3(modelMatrix[5][1]);
 				upWarbird = glm::normalize(upWarbird);
 				camera[2]->eye = glm::vec3(modelMatrix[5][3]) + upWarbird * 300.0f + zWarbird * 1000.0f;
-				camera[2]->at = glm::vec3(modelMatrix[5][3]);
-				camera[2]->up = glm::vec3(0.0f, 1.0f, 0.0f);
+				camera[2]->at = glm::vec3(modelMatrix[5][3]) + upWarbird * 300.0f;
+				camera[2]->up = upWarbird;
 				viewMatrix = camera[2]->getViewMatrix();
 			}
 			//Unum camera
@@ -314,6 +339,11 @@ void update(void){
 	axes->update();
 	//if peron presses f then the fire missle function is called
 	missile->update();
+
+	//check for collisions
+	collide = collision(warbird->getModelMatrix(), ruber->getModelMatrix(), modelSize[5], modelSize[0]);
+	
+
 	updateCount++;
 	// see if a second has passed to set estimated fps information
 	currentUpdateTime = glutGet(GLUT_ELAPSED_TIME);  // get elapsed system time
@@ -327,8 +357,6 @@ void update(void){
 	glutPostRedisplay();
 
 }
-
-
 
 
 // Estimate FPS, use for fixed interval timer driven animation
@@ -567,6 +595,10 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 			vPosition[i], vColor[i], vNormal[i], "vPosition", "vColor", "vNormal");
 		// set scale for models given bounding radius  
 		scale[i] = glm::vec3(modelSize[i] * 1.0f / modelBR[i]);
+	}
+
+	for (int i = 0; i < nModels; i++) {
+		printf("model size: %f, %f\n", modelBR[i], scale[i]);
 	}
 
 	ruber = new Planet(glm::vec3(0, 0, 0), scale[0], 264 * 3, 0.0f, 2000.0f, "Ruber.tri");

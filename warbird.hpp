@@ -75,19 +75,19 @@ public:
 	void setPitch(int i)
 	{
 		this->pitch = i;
-		this->radians = 0.02;
+		this->radians = 0.02f;
 	}
 
 	void setRoll(int i)
 	{
 		this->roll = i;
-		this->radians = 0.02;
+		this->radians = 0.02f;
 	}
 
 	void setYaw(int i)
 	{
 		this->yaw = i;
-		this->radians = 0.02;
+		this->radians = 0.02f;
 	}
 
 	void update()
