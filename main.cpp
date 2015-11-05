@@ -43,6 +43,7 @@ const int X = 0, Y = 1, Z = 2, W = 3, START = 0, STOP = 1;
 // constants for models:  file names, vertex count, model display size
 const int nModels = 8;  // number of models in this scene
 const int nCameras = 5;
+const int nCollisions = 5;
 char * modelFile[nModels] = { "Ruber.tri", "Unum.tri ", "Duo.tri", "Primus.tri",
 "Segundus.tri", "BattleCruiser.tri", "Missle.tri", "axes-r100.tri" };
 float modelBR[nModels];       // model's bounding radius
@@ -66,7 +67,9 @@ bool cycleBackward = false;
 
 bool atUnum = false;
 
-bool collide = false;
+bool collide[nCollisions];
+
+bool gravity = false;
 
 //debug boolean
 bool debug = false;
@@ -101,7 +104,7 @@ GLuint MVP;  // Model View Projection matrix's handle
 GLuint vPosition[nModels], vColor[nModels], vNormal[nModels];   // vPosition, vColor, vNormal handles for models
 // model, view, projection matrices and values to create modelMatrix.
 //loaded in order of Ruber, Umun, Duo, Primus, Secundus, Warbird, missiles
-float modelSize[nModels] = { 2000.0f, 200.0f, 400.0f, 100.0f, 150.0f, 100.0f, 25.0f, 500.0f };   // size of model
+float modelSize[nModels] = { 2000.0f, 200.0f, 400.0f, 100.0f, 150.0f, 500.0f, 25.0f, 500.0f };   // size of model
 glm::vec3 scale[nModels];       // set in init()
 glm::vec3 translate[nModels] = { glm::vec3(0, 0, 0), glm::vec3(4000, 0, 0), glm::vec3(9000, 0, 0),
 glm::vec3(900, 0, 0), glm::vec3(1750, 0, 0),
@@ -156,8 +159,14 @@ void updateTitle() {
 	strcat(titleStr, fpsStr);
 	strcat(titleStr, viewStr);
 	//printf("title string = %s \n", titleStr);
-	if (collide)
-		strcpy(titleStr, "Collision!");
+	for (int i = 0; i < nCollisions; i++)
+	{
+		if (collide[i])
+		{
+			strcpy(titleStr, "Collision!");
+		}
+		collide[i] = false;
+	}
 	glutSetWindowTitle(titleStr);
 }
 
@@ -171,7 +180,7 @@ bool collision(glm::mat4 object1, glm::mat4 object2, float radius1, float radius
 
 	float sumRadius = (radius1 + radius2)*(radius1 + radius2);
 
-	printf("%f, %f\n", distance, sumRadius);
+	//printf("%f, %f\n", distance, sumRadius);
 
 	if (distance < sumRadius)
 		collision = true;
@@ -335,13 +344,17 @@ void update(void){
 	duo->update();
 	primus->update();
 	secundus->update();
-	warbird->update();
-	axes->update();
+	warbird->update(gravity);
+	axes->update(gravity);
 	//if peron presses f then the fire missle function is called
-	missile->update();
+	//missile->update();
 
 	//check for collisions
-	collide = collision(warbird->getModelMatrix(), ruber->getModelMatrix(), modelSize[5], modelSize[0]);
+	collide[0] = collision(warbird->getModelMatrix(), ruber->getModelMatrix(), modelSize[5] + 10.0f, modelSize[0]);
+	collide[1] = collision(warbird->getModelMatrix(), unum->getModelMatrix(), modelSize[5] + 10.0f, modelSize[1]);
+	collide[2] = collision(warbird->getModelMatrix(), duo->getModelMatrix(), modelSize[5] + 10.0f, modelSize[2]);
+	collide[3] = collision(warbird->getModelMatrix(), primus->Moon(duo->getModelMatrix(), primus->getModelMatrix()), modelSize[5] + 10.0f, modelSize[3]);
+	collide[4] = collision(warbird->getModelMatrix(), secundus->Moon(duo->getModelMatrix(), secundus->getModelMatrix()), modelSize[5] + 10.0f, modelSize[4]);
 	
 
 	updateCount++;
@@ -475,8 +488,8 @@ void keyboard(unsigned char key, int x, int y) {
 			//}
 			////printf("angle %f", angle);
 			//warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));
-			showMat4("warbird", warbird->getModelMatrix());
-			showMat4("unum", unum->getModelMatrix());
+			//showMat4("warbird", warbird->getModelMatrix());
+			//showMat4("unum", unum->getModelMatrix());
 			atUnum = true;
 		}
 		else //warp to Duo
@@ -506,7 +519,7 @@ void keyboard(unsigned char key, int x, int y) {
 		
 		break;
 
-	case 'd': case 'D':  // debug case, not fully implemented yet
+	case 'd': case 'D':  // debug case
 
 		if (!debug)
 		{
@@ -515,6 +528,19 @@ void keyboard(unsigned char key, int x, int y) {
 		else
 		{
 			debug = false;
+		}
+
+		break;
+
+	case 'g': case 'G':  // toggle gravity, affects warbird
+
+		if (!gravity)
+		{
+			gravity = true;
+		}
+		else
+		{
+			gravity = false;
 		}
 
 		break;

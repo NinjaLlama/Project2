@@ -57,6 +57,10 @@ step = pitch = yaw = roll = 0*/
 public:
 
 	float stepDistance = 10;
+	const float G = 90000000.0f;
+	glm::vec3 gravityVec;
+	float distanceSquared;;
+	float gravityMagnitude;
 
 	Warbird(glm::vec3 translate, glm::vec3 scale, int vertices, float radius, char * modelFile) : Object3D(translate, scale, vertices, 0, radius, modelFile)
 	{
@@ -90,7 +94,7 @@ public:
 		this->radians = 0.02f;
 	}
 
-	void update()
+	void update(bool gravity)
 	{
 		/*distance = vec3(0, 0, step * stepDistance)
 			axis = vec3(pitch, yaw, roll)
@@ -106,7 +110,18 @@ public:
 		if (axis != glm::vec3(0))
 			rotationMatrix = glm::rotate(rotationMatrix, radians, axis);
 		//showMat4("warbird", rotationMatrix);
-		translationMatrix = glm::translate(translationMatrix, zWarbird * distance);
+		if (gravity)
+		{
+			gravityVec = glm::vec3(-orientationMatrix[3]);
+			distanceSquared = pow(gravityVec.x, 2) + pow(gravityVec.y, 2) + pow(gravityVec.z, 2);
+			gravityMagnitude = G / distanceSquared;
+			gravityVec = normalize(gravityVec) * gravityMagnitude;
+			translationMatrix = glm::translate(translationMatrix, (zWarbird * distance) + gravityVec);
+		}
+		else
+		{
+			translationMatrix = glm::translate(translationMatrix, zWarbird * distance);
+		}
 		orientationMatrix = translationMatrix * rotationMatrix;
 		step = pitch = roll = yaw = 0;
 
