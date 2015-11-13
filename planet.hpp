@@ -65,6 +65,11 @@ public:
 		return glm::translate(glm::mat4(), glm::vec3(planetMatrix[3])) * moonMatrix;
 	}
 
+	glm::mat4 MissleSite(glm::mat4 &planetMatrix, glm::mat4 &missleMatrix)
+	{
+		return glm::translate(glm::mat4(), glm::vec3(planetMatrix[3])) * missleMatrix;
+	}
+
 	glm::mat4 getModelMatrix() {
 		return(rotationMatrix * translationMatrix * scaleMatrix);
 	}

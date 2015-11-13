@@ -41,19 +41,20 @@ and make sure 'Single Startup Project' is selected ***
 
 const int X = 0, Y = 1, Z = 2, W = 3, START = 0, STOP = 1;
 // constants for models:  file names, vertex count, model display size
-const int nModels = 8;  // number of models in this scene
+const int nModelsLoaded = 9;  // number of model files
+const int nModels = 10;  // number of models in this scene (two missle sites)
 const int nCameras = 5;
 const int nCollisions = 5;
-char * modelFile[nModels] = { "Ruber.tri", "Unum.tri ", "Duo.tri", "Primus.tri",
-"Segundus.tri", "BattleCruiser.tri", "Missle.tri", "axes-r100.tri" };
-float modelBR[nModels];       // model's bounding radius
-float scaleValue[nModels];    // model's scaling "size" value
-const int nVertices[nModels] = { 264 * 3, 264 * 3, 278 * 3, 264 * 3, 264 * 3, 2772 * 3, 644 * 3, 120 * 3 };
+char * modelFile[nModelsLoaded] = { "Ruber.tri", "Unum.tri ", "Duo.tri", "Primus.tri",
+"Segundus.tri", "BattleCruiser.tri", "Missle.tri", "axes-r100.tri", "MissleBase.tri" };
+float modelBR[nModelsLoaded];       // model's bounding radius
+float scaleValue[nModelsLoaded];    // model's scaling "size" value
+const int nVertices[nModelsLoaded] = { 264 * 3, 264 * 3, 278 * 3, 264 * 3, 264 * 3, 2772 * 3, 644 * 3, 120 * 3, 1382 * 3 };
 char * vertexShaderFile = "simpleVertex.glsl";
 char * fragmentShaderFile = "simpleFragment.glsl";
 GLuint shaderProgram;
-GLuint VAO[nModels];      // Vertex Array Objects
-GLuint buffer[nModels];   // Vertex Buffer Objects
+GLuint VAO[nModelsLoaded];      // Vertex Array Objects
+GLuint buffer[nModelsLoaded];   // Vertex Buffer Objects
 
 //// vectors and values for lookAt
 //glm::vec3 eye, at, up;
@@ -101,12 +102,12 @@ double currentUpdateTime, lastUpdateTime, timeIntervalUpdate;
 
 // Shader handles, matrices, etc
 GLuint MVP;  // Model View Projection matrix's handle
-GLuint vPosition[nModels], vColor[nModels], vNormal[nModels];   // vPosition, vColor, vNormal handles for models
+GLuint vPosition[nModelsLoaded], vColor[nModelsLoaded], vNormal[nModelsLoaded];   // vPosition, vColor, vNormal handles for models
 // model, view, projection matrices and values to create modelMatrix.
 //loaded in order of Ruber, Umun, Duo, Primus, Secundus, Warbird, missiles
-float modelSize[nModels] = { 2000.0f, 200.0f, 400.0f, 100.0f, 150.0f, 500.0f, 25.0f, 500.0f };   // size of model
-glm::vec3 scale[nModels];       // set in init()
-glm::vec3 translate[nModels] = { glm::vec3(0, 0, 0), glm::vec3(4000, 0, 0), glm::vec3(9000, 0, 0),
+float modelSize[nModelsLoaded] = { 2000.0f, 200.0f, 400.0f, 100.0f, 150.0f, 500.0f, 25.0f, 500.0f, 30.0f };   // size of model
+glm::vec3 scale[nModelsLoaded];       // set in init()
+glm::vec3 translate[nModelsLoaded] = { glm::vec3(0, 0, 0), glm::vec3(4000, 0, 0), glm::vec3(9000, 0, 0),
 glm::vec3(900, 0, 0), glm::vec3(1750, 0, 0),
 glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850), glm::vec3(5000, 1000, 5000)
 
@@ -131,6 +132,8 @@ Planet * secundus;
 Warbird * warbird;
 Warbird * axes;
 Missle * missile;
+Planet * siteUnum;
+Planet * siteSecundus;
 
 glm::mat4 modelMatrix[nModels];          // set in display()
 glm::mat4 viewMatrix;           // set in init()
@@ -202,11 +205,13 @@ void display() {
 	modelMatrix[4] = secundus->Moon(duo->getModelMatrix(), secundus->getModelMatrix());
 	modelMatrix[5] = warbird->getModelMatrix();
 	modelMatrix[6] = missile->getModelMatrix();
+	modelMatrix[7] = siteUnum->MissleSite(unum->getModelMatrix(), siteUnum->getModelMatrix());
+	modelMatrix[8] = siteSecundus->MissleSite(modelMatrix[4], siteSecundus->getModelMatrix());
 
 	//showMat4("duo", modelMatrix[2]);
 	if (debug)
 	{
-		modelMatrix[7] = warbird->getModelMatrix();
+		modelMatrix[9] = warbird->getModelMatrix();
 		for (int m = 0; m < nModels; m++) {
 			//dynamic cameras
 			//warbird camera
@@ -218,7 +223,7 @@ void display() {
 				glm::vec3 upWarbird = glm::vec3(modelMatrix[5][1]);
 				upWarbird = glm::normalize(upWarbird);
 				camera[2]->eye = glm::vec3(modelMatrix[5][3]) + upWarbird * 300.0f + zWarbird * 1000.0f;
-				camera[2]->at = glm::vec3(modelMatrix[5][3]);
+				camera[2]->at = glm::vec3(modelMatrix[5][3]) + upWarbird * 300.0f;
 				camera[2]->up = upWarbird;
 				viewMatrix = camera[2]->getViewMatrix();
 			}
@@ -251,13 +256,21 @@ void display() {
 			// glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr( modelMatrix)); 
 			ModelViewProjectionMatrix = projectionMatrix * viewMatrix * modelMatrix[m];
 			glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
-			glBindVertexArray(VAO[m]);
-			/*  The following 3 lines are not needed !
-			glEnableVertexAttribArray( vPosition[m] );
-			glEnableVertexAttribArray( vColor[m] );
-			glEnableVertexAttribArray( vNormal[m] );
-			*/
-			glDrawArrays(GL_TRIANGLES, 0, nVertices[m]);
+			if (m == 7 || m == 8)
+			{
+				glBindVertexArray(VAO[8]);
+				glDrawArrays(GL_TRIANGLES, 0, nVertices[8]);
+			}
+			else if (m == 9)
+			{
+				glBindVertexArray(VAO[7]);
+				glDrawArrays(GL_TRIANGLES, 0, nVertices[7]);
+			}
+			else
+			{
+				glBindVertexArray(VAO[m]);
+				glDrawArrays(GL_TRIANGLES, 0, nVertices[m]);
+			}
 		}
 	}
 	else
@@ -306,13 +319,16 @@ void display() {
 			// glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr( modelMatrix)); 
 			ModelViewProjectionMatrix = projectionMatrix * viewMatrix * modelMatrix[m];
 			glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
-			glBindVertexArray(VAO[m]);
-			/*  The following 3 lines are not needed !
-			glEnableVertexAttribArray( vPosition[m] );
-			glEnableVertexAttribArray( vColor[m] );
-			glEnableVertexAttribArray( vNormal[m] );
-			*/
-			glDrawArrays(GL_TRIANGLES, 0, nVertices[m]);
+			if (m == 7 || m == 8)
+			{
+				glBindVertexArray(VAO[8]);
+				glDrawArrays(GL_TRIANGLES, 0, nVertices[8]);
+			}
+			else
+			{
+				glBindVertexArray(VAO[m]);
+				glDrawArrays(GL_TRIANGLES, 0, nVertices[m]);
+			}
 		}
 
 	}
@@ -613,17 +629,17 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 };*/
 
 	// generate VAOs and VBOs
-	glGenVertexArrays(nModels, VAO);
-	glGenBuffers(nModels, buffer);
+	glGenVertexArrays(nModelsLoaded, VAO);
+	glGenBuffers(nModelsLoaded, buffer);
 	// load the buffers from the model files
-	for (int i = 0; i < nModels; i++) {
+	for (int i = 0; i < nModelsLoaded; i++) {
 		modelBR[i] = loadModelBuffer(modelFile[i], nVertices[i], VAO[i], buffer[i], shaderProgram,
 			vPosition[i], vColor[i], vNormal[i], "vPosition", "vColor", "vNormal");
 		// set scale for models given bounding radius  
 		scale[i] = glm::vec3(modelSize[i] * 1.0f / modelBR[i]);
 	}
 
-	for (int i = 0; i < nModels; i++) {
+	for (int i = 0; i < nModelsLoaded; i++) {
 		printf("model size: %f, %f\n", modelBR[i], scale[i]);
 	}
 
@@ -636,6 +652,8 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	warbird = new Warbird(glm::vec3(5000, 1000, 5000), scale[5], 2772 * 3, 100.0f, "Warbird.tri");
 	axes = new Warbird(glm::vec3(5000, 1000, 5000), scale[7], 120 * 3, 100.0f, "axes-r100.tri");
 	missile = new Missle(glm::vec3(4900, 1000, 4850), scale[6], 644 * 3, 0.0f, 25.0f, "Missle.tri");
+	siteUnum = new Planet(glm::vec3(0, 200, 0), scale[8], 1382 * 3, 0.004f, 30.0f, "MissleBase.tri");
+	siteSecundus = new Planet(glm::vec3(0, 150, 0), scale[8], 1382 * 3, 0.002f, 30.0f, "MissleBase.tri");
 
 	missile->setMissleScale(glm::vec3(50.0));
 
