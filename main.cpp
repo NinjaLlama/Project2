@@ -42,7 +42,7 @@ and make sure 'Single Startup Project' is selected ***
 const int X = 0, Y = 1, Z = 2, W = 3, START = 0, STOP = 1;
 // constants for models:  file names, vertex count, model display size
 const int nModelsLoaded = 9;  // number of model files
-const int nModels = 10;  // number of models in this scene (two missle sites)
+const int nModels = 12;  // number of models in this scene (two missle sites and up to three active missles)
 const int nCameras = 5;
 const int nCollisions = 5;
 char * modelFile[nModelsLoaded] = { "Ruber.tri", "Unum.tri ", "Duo.tri", "Primus.tri",
@@ -131,7 +131,9 @@ Planet * primus;
 Planet * secundus;
 Warbird * warbird;
 Warbird * axes;
-Missle * missile;
+Missle * missileWarbird;
+Missle * missileSiteUnum;
+Missle * missileSiteSecundus;
 Planet * siteUnum;
 Planet * siteSecundus;
 
@@ -166,9 +168,8 @@ void updateTitle() {
 	{
 		if (collide[i])
 		{
-			strcpy(titleStr, "Collision!");
+			strcpy(titleStr, "Your ship has been destroyed!");
 		}
-		collide[i] = false;
 	}
 	glutSetWindowTitle(titleStr);
 }
@@ -204,131 +205,81 @@ void display() {
 	modelMatrix[3] = primus->Moon(duo->getModelMatrix(), primus->getModelMatrix());
 	modelMatrix[4] = secundus->Moon(duo->getModelMatrix(), secundus->getModelMatrix());
 	modelMatrix[5] = warbird->getModelMatrix();
-	modelMatrix[6] = missile->getModelMatrix();
-	modelMatrix[7] = siteUnum->MissleSite(unum->getModelMatrix(), siteUnum->getModelMatrix());
-	modelMatrix[8] = siteSecundus->MissleSite(modelMatrix[4], siteSecundus->getModelMatrix());
+	modelMatrix[6] = siteUnum->MissleSite(unum->getModelMatrix(), siteUnum->getModelMatrix());
+	modelMatrix[7] = siteSecundus->MissleSite(modelMatrix[4], siteSecundus->getModelMatrix());
+	modelMatrix[8] = missileWarbird->getModelMatrix();
+	modelMatrix[9] = missileSiteUnum->getModelMatrix();
+	modelMatrix[10] = missileSiteSecundus->getModelMatrix();
+	modelMatrix[11] = warbird->getModelMatrix();
 
 	//showMat4("duo", modelMatrix[2]);
-	if (debug)
-	{
-		modelMatrix[9] = warbird->getModelMatrix();
-		for (int m = 0; m < nModels; m++) {
-			//dynamic cameras
-			//warbird camera
-			if (cycleForward && toggleCam == 3 || cycleBackward && toggleCam == 2)
-			{
-				//(glm::vec3(5000.0f, 1300.0f, 6000.0f), glm::vec3(5000.0f, 1000.0f, 5000.0f), glm::vec3(0.0f, 1.0f, 0.0f)
-				glm::vec3 zWarbird = glm::vec3(modelMatrix[5][2][0], modelMatrix[5][2][1], modelMatrix[5][2][2]);
-				zWarbird = glm::normalize(zWarbird);
-				glm::vec3 upWarbird = glm::vec3(modelMatrix[5][1]);
-				upWarbird = glm::normalize(upWarbird);
-				camera[2]->eye = glm::vec3(modelMatrix[5][3]) + upWarbird * 300.0f + zWarbird * 1000.0f;
-				camera[2]->at = glm::vec3(modelMatrix[5][3]) + upWarbird * 300.0f;
-				camera[2]->up = upWarbird;
-				viewMatrix = camera[2]->getViewMatrix();
-			}
-			//Unum camera
-			if (cycleForward && toggleCam == 4 || cycleBackward && toggleCam == 3)
-			{
-				//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
-				glm::vec3 zUnum = glm::vec3(unum->getModelMatrix()[0][2], unum->getModelMatrix()[0][1] * -1, unum->getModelMatrix()[0][0] * -1);
-				zUnum = glm::normalize(zUnum);
-				camera[3]->eye = glm::vec3(unum->getModelMatrix()[3]) + zUnum * 4000.0f;        // camera is 4000 units out along Unum's -z axis        
-				camera[3]->at = glm::vec3(unum->getModelMatrix()[3]);							// camera is looking at Unum
-				camera[3]->up = glm::vec3(0.0f, 1.0f, 0.0f);             // camera's up is Y
-				viewMatrix = camera[3]->getViewMatrix();
-			}
-			//Duo camera
-			if (cycleForward && toggleCam == 5 || cycleBackward && toggleCam == 4)
-			{
-				//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
-				//glm::vec3 zDuo = glm::vec3(duo->getModelMatrix()[0][2], duo->getModelMatrix()[0][1] * -1, duo->getModelMatrix()[0][0] * -1);
-				//oh, this works too: (-1)at vector for -z axis
-				glm::vec3 zDuo = glm::vec3(duo->getModelMatrix()[2][0] * -1, duo->getModelMatrix()[2][1] * -1, duo->getModelMatrix()[2][2] * -1);
-				//showVec3("Duo", zDuo);
-				zDuo = glm::normalize(zDuo);
-				camera[4]->eye = glm::vec3(duo->getModelMatrix()[3]) + zDuo * 4000.0f;				// camera is 4000 units out along Duo's -z axis
-				camera[4]->at = glm::vec3(duo->getModelMatrix()[3]);								// camera is looking at Duo
-				camera[4]->up = glm::vec3(0.0f, 1.0f, 0.0f);                 // camera's up is Y
-				viewMatrix = camera[4]->getViewMatrix();
-			}
-
-			// glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr( modelMatrix)); 
-			ModelViewProjectionMatrix = projectionMatrix * viewMatrix * modelMatrix[m];
-			glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
-			if (m == 7 || m == 8)
-			{
-				glBindVertexArray(VAO[8]);
-				glDrawArrays(GL_TRIANGLES, 0, nVertices[8]);
-			}
-			else if (m == 9)
-			{
-				glBindVertexArray(VAO[7]);
-				glDrawArrays(GL_TRIANGLES, 0, nVertices[7]);
-			}
-			else
-			{
-				glBindVertexArray(VAO[m]);
-				glDrawArrays(GL_TRIANGLES, 0, nVertices[m]);
-			}
+	for (int m = 0; m < nModels; m++) {
+		//dynamic cameras
+		//warbird camera
+		if (cycleForward && toggleCam == 3 || cycleBackward && toggleCam == 2)
+		{
+			//(glm::vec3(5000.0f, 1300.0f, 6000.0f), glm::vec3(5000.0f, 1000.0f, 5000.0f), glm::vec3(0.0f, 1.0f, 0.0f)
+			glm::vec3 zWarbird = glm::vec3(modelMatrix[5][2][0], modelMatrix[5][2][1], modelMatrix[5][2][2]);
+			zWarbird = glm::normalize(zWarbird);
+			glm::vec3 upWarbird = glm::vec3(modelMatrix[5][1]);
+			upWarbird = glm::normalize(upWarbird);
+			camera[2]->eye = glm::vec3(modelMatrix[5][3]) + upWarbird * 300.0f + zWarbird * 1000.0f;
+			camera[2]->at = glm::vec3(modelMatrix[5][3]) + upWarbird * 300.0f;
+			camera[2]->up = upWarbird;
+			viewMatrix = camera[2]->getViewMatrix();
 		}
-	}
-	else
-	{
-		for (int m = 0; m < nModels-1; m++) {
-			//dynamic cameras
-			//warbird camera
-			if (cycleForward && toggleCam == 3 || cycleBackward && toggleCam == 2)
-			{
-				//(glm::vec3(5000.0f, 1300.0f, 6000.0f), glm::vec3(5000.0f, 1000.0f, 5000.0f), glm::vec3(0.0f, 1.0f, 0.0f)
-				glm::vec3 zWarbird = glm::vec3(modelMatrix[5][2][0], modelMatrix[5][2][1], modelMatrix[5][2][2]);
-				zWarbird = glm::normalize(zWarbird);
-				glm::vec3 upWarbird = glm::vec3(modelMatrix[5][1]);
-				upWarbird = glm::normalize(upWarbird);
-				camera[2]->eye = glm::vec3(modelMatrix[5][3]) + upWarbird * 300.0f + zWarbird * 1000.0f;
-				camera[2]->at = glm::vec3(modelMatrix[5][3]) + upWarbird * 300.0f;
-				camera[2]->up = upWarbird;
-				viewMatrix = camera[2]->getViewMatrix();
-			}
-			//Unum camera
-			if (cycleForward && toggleCam == 4 || cycleBackward && toggleCam == 3)
-			{
-				//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
-				glm::vec3 zUnum = glm::vec3(unum->getModelMatrix()[0][2], unum->getModelMatrix()[0][1] * -1, unum->getModelMatrix()[0][0] * -1);
-				zUnum = glm::normalize(zUnum);
-				camera[3]->eye = glm::vec3(unum->getModelMatrix()[3]) + zUnum * 4000.0f;        // camera is 4000 units out along Unum's -z axis        
-				camera[3]->at = glm::vec3(unum->getModelMatrix()[3]);							// camera is looking at Unum
-				camera[3]->up = glm::vec3(0.0f, 1.0f, 0.0f);             // camera's up is Y
-				viewMatrix = camera[3]->getViewMatrix();
-			}
-			//Duo camera
-			if (cycleForward && toggleCam == 5 || cycleBackward && toggleCam == 4)
-			{
-				//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
-				//glm::vec3 zDuo = glm::vec3(duo->getModelMatrix()[0][2], duo->getModelMatrix()[0][1] * -1, duo->getModelMatrix()[0][0] * -1);
-				//oh, this works too: (-1)at vector for -z axis
-				glm::vec3 zDuo = glm::vec3(duo->getModelMatrix()[2][0] * -1, duo->getModelMatrix()[2][1] * -1, duo->getModelMatrix()[2][2] * -1);
-				//showVec3("Duo", zDuo);
-				zDuo = glm::normalize(zDuo);
-				camera[4]->eye = glm::vec3(duo->getModelMatrix()[3]) + zDuo * 4000.0f;				// camera is 4000 units out along Duo's -z axis
-				camera[4]->at = glm::vec3(duo->getModelMatrix()[3]);								// camera is looking at Duo
-				camera[4]->up = glm::vec3(0.0f, 1.0f, 0.0f);                 // camera's up is Y
-				viewMatrix = camera[4]->getViewMatrix();
-			}
+		//Unum camera
+		if (cycleForward && toggleCam == 4 || cycleBackward && toggleCam == 3)
+		{
+			//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
+			glm::vec3 zUnum = glm::vec3(unum->getModelMatrix()[0][2], unum->getModelMatrix()[0][1] * -1, unum->getModelMatrix()[0][0] * -1);
+			zUnum = glm::normalize(zUnum);
+			camera[3]->eye = glm::vec3(unum->getModelMatrix()[3]) + zUnum * 4000.0f;        // camera is 4000 units out along Unum's -z axis        
+			camera[3]->at = glm::vec3(unum->getModelMatrix()[3]);							// camera is looking at Unum
+			camera[3]->up = glm::vec3(0.0f, 1.0f, 0.0f);             // camera's up is Y
+			viewMatrix = camera[3]->getViewMatrix();
+		}
+		//Duo camera
+		if (cycleForward && toggleCam == 5 || cycleBackward && toggleCam == 4)
+		{
+			//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
+			//glm::vec3 zDuo = glm::vec3(duo->getModelMatrix()[0][2], duo->getModelMatrix()[0][1] * -1, duo->getModelMatrix()[0][0] * -1);
+			//oh, this works too: (-1)at vector for -z axis
+			glm::vec3 zDuo = glm::vec3(duo->getModelMatrix()[2][0] * -1, duo->getModelMatrix()[2][1] * -1, duo->getModelMatrix()[2][2] * -1);
+			//showVec3("Duo", zDuo);
+			zDuo = glm::normalize(zDuo);
+			camera[4]->eye = glm::vec3(duo->getModelMatrix()[3]) + zDuo * 4000.0f;				// camera is 4000 units out along Duo's -z axis
+			camera[4]->at = glm::vec3(duo->getModelMatrix()[3]);								// camera is looking at Duo
+			camera[4]->up = glm::vec3(0.0f, 1.0f, 0.0f);                 // camera's up is Y
+			viewMatrix = camera[4]->getViewMatrix();
+		}
 
-			// glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr( modelMatrix)); 
-			ModelViewProjectionMatrix = projectionMatrix * viewMatrix * modelMatrix[m];
-			glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
-			if (m == 7 || m == 8)
-			{
-				glBindVertexArray(VAO[8]);
-				glDrawArrays(GL_TRIANGLES, 0, nVertices[8]);
-			}
-			else
-			{
-				glBindVertexArray(VAO[m]);
-				glDrawArrays(GL_TRIANGLES, 0, nVertices[m]);
-			}
+		// glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr( modelMatrix)); 
+		ModelViewProjectionMatrix = projectionMatrix * viewMatrix * modelMatrix[m];
+		glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
+		if (m < 6)
+		{
+			glBindVertexArray(VAO[m]);
+			glDrawArrays(GL_TRIANGLES, 0, nVertices[m]);
+		}
+		else if (m == 6 || m == 7) //missle sites
+		{
+			glBindVertexArray(VAO[8]);
+			glDrawArrays(GL_TRIANGLES, 0, nVertices[8]);
+		}
+		else if (m > 7 && m < 11) //up to three missles
+		{
+			glBindVertexArray(VAO[6]);
+			glDrawArrays(GL_TRIANGLES, 0, nVertices[6]);
+		}
+		else if (debug && m == 11) //debug axes
+		{
+			glBindVertexArray(VAO[7]);
+			glDrawArrays(GL_TRIANGLES, 0, nVertices[7]);
+		}
+		else
+		{
+			//do nothing
 		}
 
 	}
@@ -348,14 +299,6 @@ void display() {
 
 // to set rotation
 void update(void){
-	/*//rotation speed for Unum and Primus
-	rotateRadianOne += 0.004f;
-	if (rotateRadianOne >  2 * PI) rotateRadianOne = 0.0f;
-	rotationOne = glm::rotate(identity, rotateRadianOne, glm::vec3(0, 1, 0));
-	//rotation speed for Duo and Secundus
-	rotateRadianTwo += 0.002f;
-	if (rotateRadianTwo >  2 * PI) rotateRadianTwo = 0.0f;
-	rotationTwo = glm::rotate(identity, rotateRadianTwo, glm::vec3(0, 1, 0));*/
 	unum->update();
 	duo->update();
 	primus->update();
@@ -363,7 +306,7 @@ void update(void){
 	warbird->update(gravity);
 	axes->update(gravity);
 	//if peron presses f then the fire missle function is called
-	//missile->update();
+	missileWarbird->update();
 
 	//check for collisions
 	collide[0] = collision(warbird->getModelMatrix(), ruber->getModelMatrix(), modelSize[5] + 10.0f, modelSize[0]);
@@ -391,7 +334,16 @@ void update(void){
 // Estimate FPS, use for fixed interval timer driven animation
 void intervalTimer(int i) {
 	glutTimerFunc(timerDelay[timer], intervalTimer, 1);
-	update();  // fixed interval timer
+	/*bool collision = false;
+	for (int i = 0; i < nCollisions; i++)
+	{
+		if (collide[i])
+		{
+			collision = true;
+		}
+	}
+	if (!collision)*/
+	update();
 }
 
 void keyboard(unsigned char key, int x, int y) {
@@ -651,11 +603,13 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	secundus = new Planet(glm::vec3(1750, 0, 0), scale[4], 264 * 3, 0.002f, 150.0f, "Secundus.tri");
 	warbird = new Warbird(glm::vec3(5000, 1000, 5000), scale[5], 2772 * 3, 100.0f, "Warbird.tri");
 	axes = new Warbird(glm::vec3(5000, 1000, 5000), scale[7], 120 * 3, 100.0f, "axes-r100.tri");
-	missile = new Missle(glm::vec3(4900, 1000, 4850), scale[6], 644 * 3, 0.0f, 25.0f, "Missle.tri");
+	missileWarbird = new Missle(glm::vec3(4900, 1000, 4850), scale[6], 644 * 3, 0.0f, 25.0f, "Missle.tri");
+	missileSiteUnum = new Missle(glm::vec3(4900, 1000, 4850), scale[6], 644 * 3, 0.0f, 25.0f, "Missle.tri");
+	missileSiteSecundus = new Missle(glm::vec3(4900, 1000, 4850), scale[6], 644 * 3, 0.0f, 25.0f, "Missle.tri");
 	siteUnum = new Planet(glm::vec3(0, 200, 0), scale[8], 1382 * 3, 0.004f, 30.0f, "MissleBase.tri");
 	siteSecundus = new Planet(glm::vec3(0, 150, 0), scale[8], 1382 * 3, 0.002f, 30.0f, "MissleBase.tri");
 
-	missile->setMissleScale(glm::vec3(50.0));
+	missileWarbird->setMissleScale(glm::vec3(50.0));
 
 	MVP = glGetUniformLocation(shaderProgram, "ModelViewProjection");
 
