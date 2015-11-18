@@ -306,8 +306,7 @@ void update(void){
 	warbird->update(gravity);
 	axes->update(gravity);
 	//if peron presses f then the fire missle function is called
-	missileWarbird->update();
-
+	missileWarbird->update(modelMatrix[6]);
 	//check for collisions
 	collide[0] = collision(warbird->getModelMatrix(), ruber->getModelMatrix(), modelSize[5] + 10.0f, modelSize[0]);
 	collide[1] = collision(warbird->getModelMatrix(), unum->getModelMatrix(), modelSize[5] + 10.0f, modelSize[1]);
