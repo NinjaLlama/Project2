@@ -83,27 +83,36 @@ public:
 	{
 
 		showMat4("target", Target);
-		showMat4("translate", translationMatrix);
-		glm::vec3 targetVector = glm::normalize(glm::vec3(Target[2]));
+		showMat4("orientation", orientationMatrix);
+		glm::vec3 targetVector = glm::normalize(glm::vec3(Target[3]));
 		
-		glm::vec3 missleVector = glm::normalize(glm::vec3(orientationMatrix[2]));
+		glm::vec3 missleLatVector = glm::normalize(glm::vec3(getModelMatrix()[2]));
 
-		
+		glm::vec3 missleVector = glm::normalize(glm::vec3(getModelMatrix()[3]));
+
+		float radian = 0;
 	   
-		float angle = angleBetween(missleVector, targetVector, glm::vec3(0));
+		float angle = acos(glm::dot(glm::normalize(targetVector - missleVector), -missleLatVector))/8;
+		/*if (angle < 0.009)
+			angle = 0;*/
+		printf("angle = %f", angle);
 
-		//glm::vec3 axis = glm::normalize(glm::cross(missleVector, targetVector));
-		glm::vec3 axis = glm::vec3(0, 1, 0);
+		glm::vec3 axis = glm::normalize(glm::cross(glm::normalize(targetVector - missleVector), -missleLatVector));
+		//glm::vec3 axis = glm::vec3(0, 1, 0);
+		float axisDirection = axis.x + axis.y + axis.z;
+		if (axisDirection >= 0) // adjust rotational value
+			radian = angle;
+		else
+			radian = 2 * PI - angle;
 		if (axis != glm::vec3(0))
 		{
 
-			rotationMatrix = glm::rotate(rotationMatrix, angle, axis);
+			rotationMatrix = glm::rotate(rotationMatrix, radian, axis);
 		}
 
-		rotationMatrix = glm::rotate(rotationMatrix, angle, axis);
 
 		showMat4("rotation",rotationMatrix);
-			orientationMatrix = translationMatrix*rotationMatrix;
+			orientationMatrix = translationMatrix * rotationMatrix;
 
 		/*
 		if (num>=0){
@@ -143,7 +152,7 @@ public:
 
 
 	glm::mat4 getModelMatrix() {
-		return(rotationMatrix * translationMatrix * scaleMatrix);
+		return(translationMatrix * rotationMatrix * scaleMatrix);
 	}
 
 	float angleBetween(glm::vec3 a,glm::vec3 b,glm::vec3 origin) 

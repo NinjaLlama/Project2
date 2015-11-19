@@ -210,7 +210,7 @@ void display() {
 	modelMatrix[8] = missileWarbird->getModelMatrix();
 	modelMatrix[9] = missileSiteUnum->getModelMatrix();
 	modelMatrix[10] = missileSiteSecundus->getModelMatrix();
-	modelMatrix[11] = warbird->getModelMatrix();
+	modelMatrix[11] = missileWarbird->getModelMatrix();
 
 	//showMat4("duo", modelMatrix[2]);
 	for (int m = 0; m < nModels; m++) {
