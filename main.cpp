@@ -105,7 +105,7 @@ GLuint MVP;  // Model View Projection matrix's handle
 GLuint vPosition[nModelsLoaded], vColor[nModelsLoaded], vNormal[nModelsLoaded];   // vPosition, vColor, vNormal handles for models
 // model, view, projection matrices and values to create modelMatrix.
 //loaded in order of Ruber, Umun, Duo, Primus, Secundus, Warbird, missiles
-float modelSize[nModelsLoaded] = { 2000.0f, 200.0f, 400.0f, 100.0f, 150.0f, 500.0f, 25.0f, 500.0f, 30.0f };   // size of model
+float modelSize[nModelsLoaded] = { 2000.0f, 200.0f, 400.0f, 100.0f, 150.0f, 150.0f, 25.0f, 150.0f, 30.0f };   // size of model
 glm::vec3 scale[nModelsLoaded];       // set in init()
 glm::vec3 translate[nModelsLoaded] = { glm::vec3(0, 0, 0), glm::vec3(4000, 0, 0), glm::vec3(9000, 0, 0),
 glm::vec3(900, 0, 0), glm::vec3(1750, 0, 0),
@@ -608,7 +608,7 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	siteUnum = new Planet(glm::vec3(0, 200, 0), scale[8], 1382 * 3, 0.004f, 30.0f, "MissleBase.tri");
 	siteSecundus = new Planet(glm::vec3(0, 150, 0), scale[8], 1382 * 3, 0.002f, 30.0f, "MissleBase.tri");
 
-	missileWarbird->setMissleScale(glm::vec3(50.0));
+	missileWarbird->setMissleScale(glm::vec3(20.0));
 
 	MVP = glGetUniformLocation(shaderProgram, "ModelViewProjection");
 
