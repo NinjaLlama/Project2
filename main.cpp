@@ -251,7 +251,7 @@ void display() {
 			//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
 			glm::vec3 zUnum = glm::vec3(unum->getModelMatrix()[0][2], unum->getModelMatrix()[0][1] * -1, unum->getModelMatrix()[0][0] * -1);
 			zUnum = glm::normalize(zUnum);
-			camera[3]->eye = glm::vec3(unum->getModelMatrix()[3]) + zUnum * 4000.0f;        // camera is 4000 units out along Unum's -z axis        
+			camera[3]->eye = glm::vec3(unum->getModelMatrix()[3]) + zUnum * 8000.0f;        // camera is 4000 units out along Unum's -z axis        
 			camera[3]->at = glm::vec3(unum->getModelMatrix()[3]);							// camera is looking at Unum
 			camera[3]->up = glm::vec3(0.0f, 1.0f, 0.0f);             // camera's up is Y
 			viewMatrix = camera[3]->getViewMatrix();
@@ -265,7 +265,7 @@ void display() {
 			glm::vec3 zDuo = glm::vec3(duo->getModelMatrix()[2][0] * -1, duo->getModelMatrix()[2][1] * -1, duo->getModelMatrix()[2][2] * -1);
 			//showVec3("Duo", zDuo);
 			zDuo = glm::normalize(zDuo);
-			camera[4]->eye = glm::vec3(duo->getModelMatrix()[3]) + zDuo * 4000.0f;				// camera is 4000 units out along Duo's -z axis
+			camera[4]->eye = glm::vec3(duo->getModelMatrix()[3]) + zDuo * 8000.0f;				// camera is 4000 units out along Duo's -z axis
 			camera[4]->at = glm::vec3(duo->getModelMatrix()[3]);								// camera is looking at Duo
 			camera[4]->up = glm::vec3(0.0f, 1.0f, 0.0f);                 // camera's up is Y
 			viewMatrix = camera[4]->getViewMatrix();
@@ -346,7 +346,7 @@ void update(void){
 	}
 	//update unum missle
 	if (activeMissleUnum)
-		missileSiteUnum->update(warbird->getModelMatrix(), shipMissleSpeed);
+		missileSiteUnum->update(warbird->getModelMatrix(), siteMissleSpeed);
 	//check if secundus missle site should fire a missle
 	if (distance(warbird->getModelMatrix(), modelMatrix[7]) < pow(5000, 2) && !activeMissleSecundus)
 	{
@@ -356,7 +356,7 @@ void update(void){
 	}
 	//update secundus missle
 	if (activeMissleSecundus)
-		missileSiteSecundus->update(warbird->getModelMatrix(), shipMissleSpeed);
+		missileSiteSecundus->update(warbird->getModelMatrix(), siteMissleSpeed);
 
 	if (missileWarbird->destroyMissle)
 	{
@@ -518,7 +518,7 @@ void keyboard(unsigned char key, int x, int y) {
 			glm::vec3 zUnum = glm::vec3(unum->getModelMatrix()[0][2], unum->getModelMatrix()[0][1] * -1, unum->getModelMatrix()[0][0] * -1);
 			zUnum = glm::normalize(zUnum);
 			warbird->rotationMatrix = unum->rotationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));
-			warbird->translationMatrix = glm::translate(identity, glm::vec3(unum->getModelMatrix()[3]) + zUnum * 4000.0f);
+			warbird->translationMatrix = glm::translate(identity, glm::vec3(unum->getModelMatrix()[3]) + zUnum * 8000.0f);
 			//float angle = warbird->angleBetween(glm::vec3(warbird->translationMatrix[2]), glm::vec3(unum->getModelMatrix()[2]), glm::vec3(0));
 			////showMat4("umum: ", unum->getModelMatrix());
 			//if (unum->getModelMatrix()[3][2] > 0)
@@ -536,7 +536,7 @@ void keyboard(unsigned char key, int x, int y) {
 			glm::vec3 zDuo = glm::vec3(duo->getModelMatrix()[0][2], duo->getModelMatrix()[0][1] * -1, duo->getModelMatrix()[0][0] * -1);
 			zDuo = glm::normalize(zDuo);
 			warbird->rotationMatrix = duo->rotationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));;
-			warbird->translationMatrix = glm::translate(identity, glm::vec3(duo->getModelMatrix()[3]) + zDuo * 4000.0f);
+			warbird->translationMatrix = glm::translate(identity, glm::vec3(duo->getModelMatrix()[3]) + zDuo * 8000.0f);
 			/*warbird->translationMatrix = warbird->getDirectionMatrix(glm::vec3(warbird->translationMatrix[3]), glm::vec3(duo->getModelMatrix()[3]));
 			warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));*/
 			/*float angle = warbird->angleBetween(glm::vec3(warbird->translationMatrix[2]), glm::vec3(duo->getModelMatrix()[2]), glm::vec3(0));

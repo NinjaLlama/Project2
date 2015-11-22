@@ -86,7 +86,7 @@ public:
 	{
 
 		//showMat4("target", Target);
-		showMat4("orientation", getModelMatrix());
+		//showMat4("orientation", getModelMatrix());
 		glm::vec3 targetVector = glm::vec3(Target[3]);
 
 		glm::vec3 missleLatVector = glm::normalize(glm::vec3(getModelMatrix()[2]));
@@ -95,8 +95,8 @@ public:
 		glm::vec3 directionVector = glm::normalize(targetVector - missleVector);
 		float distance = pow(abs(targetVector.x - missleVector.x), 2) + pow(abs(targetVector.y - missleVector.y), 2) + pow(abs(targetVector.z - missleVector.z), 2);
 		//printf("distance = %f", distance);
-		targetVector = glm::normalize(targetVector);
-		missleVector = glm::normalize(missleVector);
+		/*targetVector = glm::normalize(targetVector);
+		missleVector = glm::normalize(missleVector);*/
 		if (missleUpdate < 200 || distance > pow(5000, 2))
 		{
 			translationMatrix = glm::translate(translationMatrix, -missleLatVector*missleSpeed);
@@ -111,15 +111,15 @@ public:
 
 			float radian = 0;
 
-			float angle = glm::dot(glm::normalize(targetVector - missleVector), -missleLatVector);
-			if (angle >= PI)
+			float angle = acos(glm::dot(glm::normalize(targetVector - missleVector), -missleLatVector));
+			/*if (angle >= PI)
 				angle = 2 * PI - acos(angle);
 			else
-				angle = acos(angle);
+				angle = acos(angle);*/
 			//printf("angle = %f\n", angle);
-			angle = angle / 6;
+			angle = angle / 3;
 
-			if (colinear(directionVector, -missleLatVector, .2f) == false)
+			if (colinear(directionVector, -missleLatVector, .2f) == true)
 			{
 				targetVector = glm::vec3(targetVector.x + .1f, targetVector.y + (-0.2f), targetVector.z + 0.1f);
 			}
@@ -131,7 +131,7 @@ public:
 			else
 				radian = 2 * PI - angle;
 			//printf("radian = %f\n", radian);
-			if (axis != glm::vec3(0))
+			if (dot(directionVector, -missleLatVector) < .98f)
 			{
 
 				rotationMatrix = glm::rotate(rotationMatrix, radian, axis);
@@ -219,9 +219,9 @@ public:
 		glm::vec3 direction2Vector = glm::normalize(target2Vector - missleVector);
 		float distance2 = pow(abs(target2Vector.x - missleVector.x), 2) + pow(abs(target2Vector.y - missleVector.y), 2) + pow(abs(target2Vector.z - missleVector.z), 2);
 
-		target1Vector = glm::normalize(target1Vector);
+		/*target1Vector = glm::normalize(target1Vector);
 		missleVector = glm::normalize(missleVector);
-		target2Vector = glm::normalize(target2Vector);
+		target2Vector = glm::normalize(target2Vector);*/
 
 		if (distance1 < pow(5000, 2))
 		{
@@ -239,15 +239,15 @@ public:
 
 				float radian = 0;
 
-				float angle = glm::dot(glm::normalize(target1Vector - missleVector), -missleLatVector);
-				if (angle >= PI)
+				float angle = acos(glm::dot(glm::normalize(target1Vector - missleVector), -missleLatVector));
+				/*if (angle >= 180)
 					angle = 2 * PI - acos(angle);
 				else
-					angle = acos(angle);
+					angle = acos(angle);*/
 				//printf("angle = %f\n", angle);
-				angle = angle / 6;
+				angle = angle / 3;
 
-				if (colinear(direction1Vector, -missleLatVector, .2f) == false)
+				if (colinear(direction1Vector, -missleLatVector, .2f) == true)
 				{
 					target1Vector = glm::vec3(target1Vector.x + .1f, target1Vector.y + (-0.2f), target1Vector.z + 0.1f);
 				}
@@ -259,7 +259,7 @@ public:
 				else
 					radian = 2 * PI - angle;
 				//printf("radian = %f\n", radian);
-				if (axis != glm::vec3(0))
+				if (dot(direction1Vector, -missleLatVector) < .98f)
 				{
 
 					rotationMatrix = glm::rotate(rotationMatrix, radian, axis);
@@ -294,14 +294,14 @@ public:
 				float radian = 0;
 
 				float angle = glm::dot(glm::normalize(target2Vector - missleVector), -missleLatVector);
-				if (angle >= PI)
+				/*if (angle >= PI)
 					angle = 2 * PI - acos(angle);
 				else
-					angle = acos(angle);
+					angle = acos(angle);*/
 				//printf("angle = %f\n", angle);
-				angle = angle / 6;
+				angle = angle / 3;
 
-				if (colinear(direction2Vector, -missleLatVector, .2f) == false)
+				if (colinear(direction2Vector, -missleLatVector, .2f) == true)
 				{
 					target2Vector = glm::vec3(target2Vector.x + .1f, target2Vector.y + (-0.2f), target2Vector.z + 0.1f);
 				}
@@ -313,7 +313,7 @@ public:
 				else
 					radian = 2 * PI - angle;
 				//printf("radian = %f\n", radian);
-				if (axis != glm::vec3(0))
+				if (dot(direction1Vector, -missleLatVector) != 1)
 				{
 
 					rotationMatrix = glm::rotate(rotationMatrix, radian, axis);
