@@ -23,7 +23,7 @@ private:
 
 	//position of the missle in z coordinates
 	int num = 4850;
-	
+
 
 	//rotation of the missle
 	glm::vec3 rotate;
@@ -41,6 +41,9 @@ private:
 public:
 
 	float rotation;
+	int missleUpdate = 0;
+	int maxUpdate = 2000;
+	bool destroyMissle = false;
 
 	Missle::Missle(glm::vec3 translate, glm::vec3 scale, int vertices, float rotation, float radius, char * modelFile) : Object3D(translate, scale, vertices, rotation, radius, modelFile)
 	{
@@ -63,7 +66,7 @@ public:
 	//helps with the translation of the missle position
 	void setMisslePosition(glm::vec3 position)
 	{
-		
+
 	}
 
 	glm::vec3 getMisslePosition()
@@ -71,7 +74,7 @@ public:
 
 	}
 
-	
+
 
 	//helps set the scale of the missle
 	void setMissleScale(glm::vec3  model_size)
@@ -79,62 +82,81 @@ public:
 		scaleMatrix = glm::scale(glm::mat4(), model_size);
 	}
 
-	void update(glm::mat4 Target)
+	void update(glm::mat4 Target, float missleSpeed)
 	{
 
-		showMat4("target", Target);
-		showMat4("orientation", orientationMatrix);
-		glm::vec3 targetVector = glm::normalize(glm::vec3(Target[3]));
-		
+		//showMat4("target", Target);
+		showMat4("orientation", getModelMatrix());
+		glm::vec3 targetVector = glm::vec3(Target[3]);
+
 		glm::vec3 missleLatVector = glm::normalize(glm::vec3(getModelMatrix()[2]));
 
-		glm::vec3 missleVector = glm::normalize(glm::vec3(getModelMatrix()[3]));
+		glm::vec3 missleVector = glm::vec3(getModelMatrix()[3]);
 		glm::vec3 directionVector = glm::normalize(targetVector - missleVector);
-
-		float radian = 0;
-	   
-		float angle = acos(glm::dot(glm::normalize(targetVector - missleVector), -missleLatVector))/2;
-		/*if (angle < 0.009)
-			angle = 0;*/
-		printf("angle = %f", angle);
-
-		if (colinear(directionVector, -missleLatVector, .1f)==false)
+		float distance = pow(abs(targetVector.x - missleVector.x), 2) + pow(abs(targetVector.y - missleVector.y), 2) + pow(abs(targetVector.z - missleVector.z), 2);
+		//printf("distance = %f", distance);
+		targetVector = glm::normalize(targetVector);
+		missleVector = glm::normalize(missleVector);
+		if (missleUpdate < 200 || distance > pow(5000, 2))
 		{
-			targetVector = glm::vec3(targetVector.x + .1f, targetVector.y+ (-0.2f), targetVector.z + 0.1f);
+			translationMatrix = glm::translate(translationMatrix, -missleLatVector*missleSpeed);
+			missleUpdate++;
 		}
-		glm::vec3 axis = glm::normalize(glm::cross(glm::normalize(targetVector - missleVector), -missleLatVector));
-		//glm::vec3 axis = glm::vec3(0, 1, 0);
-		float axisDirection = axis.x + axis.y + axis.z;
-		if (axisDirection >= 0) // adjust rotational value
-			radian = angle;
+		else if (missleUpdate == maxUpdate)
+		{
+			destroyMissle = true;
+		}
 		else
-			radian = 2 * PI - angle;
-		if (axis != glm::vec3(0))
 		{
 
-			rotationMatrix = glm::rotate(rotationMatrix, radian, axis);
+			float radian = 0;
+
+			float angle = glm::dot(glm::normalize(targetVector - missleVector), -missleLatVector);
+			if (angle >= PI)
+				angle = 2 * PI - acos(angle);
+			else
+				angle = acos(angle);
+			//printf("angle = %f\n", angle);
+			angle = angle / 6;
+
+			if (colinear(directionVector, -missleLatVector, .2f) == false)
+			{
+				targetVector = glm::vec3(targetVector.x + .1f, targetVector.y + (-0.2f), targetVector.z + 0.1f);
+			}
+			glm::vec3 axis = glm::normalize(glm::cross(glm::normalize(targetVector - missleVector), -missleLatVector));
+			//glm::vec3 axis = glm::vec3(0, 1, 0);
+			float axisDirection = axis.x + axis.y + axis.z;
+			if (axisDirection >= 0) // adjust rotational value
+				radian = angle;
+			else
+				radian = 2 * PI - angle;
+			//printf("radian = %f\n", radian);
+			if (axis != glm::vec3(0))
+			{
+
+				rotationMatrix = glm::rotate(rotationMatrix, radian, axis);
+			}
+
+
+			//showMat4("rotation", rotationMatrix);
+
+
+
+			translationMatrix = glm::translate(translationMatrix, -missleLatVector*missleSpeed);
+
+			missleUpdate++;
 		}
-
-
-		showMat4("rotation",rotationMatrix);
-
-
-
-		translationMatrix = glm::translate(translationMatrix,- missleLatVector*35.0f);
-
-			orientationMatrix = translationMatrix * rotationMatrix;
-
 
 
 		/*
 		if (num>=0){
-			translationMatrix = glm::translate(glm::mat4(1.0), glm::vec3(4950, 100, num));
-			rotationMatrix = glm::rotate(glm::mat4(1.0), PI/16, glm::vec3(0, 1,0));
-			num = num - 100;
-			printf("%d \n",num);
-			//showMat4("translate", translationMatrix);
-			
-		} 
+		translationMatrix = glm::translate(glm::mat4(1.0), glm::vec3(4950, 100, num));
+		rotationMatrix = glm::rotate(glm::mat4(1.0), PI/16, glm::vec3(0, 1,0));
+		num = num - 100;
+		printf("%d \n",num);
+		//showMat4("translate", translationMatrix);
+
+		}
 		*/
 	}
 
@@ -167,18 +189,153 @@ public:
 		return(translationMatrix * rotationMatrix * scaleMatrix);
 	}
 
-	float angleBetween(glm::vec3 a,glm::vec3 b,glm::vec3 origin) 
+	float angleBetween(glm::vec3 a, glm::vec3 b, glm::vec3 origin)
 	{
 		glm::vec3 da = glm::normalize(a - origin);
 		glm::vec3 db = glm::normalize(b - origin);
 		return acos(glm::dot(da, db));
 	}
-	
+
 
 	glm::mat4 Missle::getMissleMatrix(void)
 	{
 		return missleModelMatrix;
 	}
+
+	void update(glm::mat4 Target1, glm::mat4 Target2, float missleSpeed)
+	{
+
+		//showMat4("target", Target);
+		//showMat4("orientation", orientationMatrix);
+
+		glm::vec3 missleLatVector = glm::normalize(glm::vec3(getModelMatrix()[2]));
+		glm::vec3 missleVector = glm::vec3(getModelMatrix()[3]);
+
+		glm::vec3 target1Vector = glm::vec3(Target1[3]);
+		glm::vec3 direction1Vector = glm::normalize(target1Vector - missleVector);
+		float distance1 = pow(abs(target1Vector.x - missleVector.x), 2) + pow(abs(target1Vector.y - missleVector.y), 2) + pow(abs(target1Vector.z - missleVector.z), 2);
+
+		glm::vec3 target2Vector = glm::vec3(Target2[3]);
+		glm::vec3 direction2Vector = glm::normalize(target2Vector - missleVector);
+		float distance2 = pow(abs(target2Vector.x - missleVector.x), 2) + pow(abs(target2Vector.y - missleVector.y), 2) + pow(abs(target2Vector.z - missleVector.z), 2);
+
+		target1Vector = glm::normalize(target1Vector);
+		missleVector = glm::normalize(missleVector);
+		target2Vector = glm::normalize(target2Vector);
+
+		if (distance1 < pow(5000, 2))
+		{
+			if (missleUpdate < 200)
+			{
+				translationMatrix = glm::translate(translationMatrix, -missleLatVector*missleSpeed);
+				missleUpdate++;
+			}
+			else if (missleUpdate == maxUpdate)
+			{
+				destroyMissle = true;
+			}
+			else
+			{
+
+				float radian = 0;
+
+				float angle = glm::dot(glm::normalize(target1Vector - missleVector), -missleLatVector);
+				if (angle >= PI)
+					angle = 2 * PI - acos(angle);
+				else
+					angle = acos(angle);
+				//printf("angle = %f\n", angle);
+				angle = angle / 6;
+
+				if (colinear(direction1Vector, -missleLatVector, .2f) == false)
+				{
+					target1Vector = glm::vec3(target1Vector.x + .1f, target1Vector.y + (-0.2f), target1Vector.z + 0.1f);
+				}
+				glm::vec3 axis = glm::normalize(glm::cross(glm::normalize(target1Vector - missleVector), -missleLatVector));
+				//glm::vec3 axis = glm::vec3(0, 1, 0);
+				float axisDirection = axis.x + axis.y + axis.z;
+				if (axisDirection >= 0) // adjust rotational value
+					radian = angle;
+				else
+					radian = 2 * PI - angle;
+				//printf("radian = %f\n", radian);
+				if (axis != glm::vec3(0))
+				{
+
+					rotationMatrix = glm::rotate(rotationMatrix, radian, axis);
+				}
+
+
+				//showMat4("rotation", rotationMatrix);
+
+
+
+				translationMatrix = glm::translate(translationMatrix, -missleLatVector*missleSpeed);
+
+				missleUpdate++;
+			}
+
+
+		}
+		else if (distance2 < pow(5000, 2))
+		{
+			if (missleUpdate < 200)
+			{
+				translationMatrix = glm::translate(translationMatrix, -missleLatVector*missleSpeed);
+				missleUpdate++;
+			}
+			else if (missleUpdate == maxUpdate)
+			{
+				destroyMissle = true;
+			}
+			else
+			{
+
+				float radian = 0;
+
+				float angle = glm::dot(glm::normalize(target2Vector - missleVector), -missleLatVector);
+				if (angle >= PI)
+					angle = 2 * PI - acos(angle);
+				else
+					angle = acos(angle);
+				//printf("angle = %f\n", angle);
+				angle = angle / 6;
+
+				if (colinear(direction2Vector, -missleLatVector, .2f) == false)
+				{
+					target2Vector = glm::vec3(target2Vector.x + .1f, target2Vector.y + (-0.2f), target2Vector.z + 0.1f);
+				}
+				glm::vec3 axis = glm::normalize(glm::cross(glm::normalize(target2Vector - missleVector), -missleLatVector));
+				//glm::vec3 axis = glm::vec3(0, 1, 0);
+				float axisDirection = axis.x + axis.y + axis.z;
+				if (axisDirection >= 0) // adjust rotational value
+					radian = angle;
+				else
+					radian = 2 * PI - angle;
+				//printf("radian = %f\n", radian);
+				if (axis != glm::vec3(0))
+				{
+
+					rotationMatrix = glm::rotate(rotationMatrix, radian, axis);
+				}
+
+
+				//showMat4("rotation", rotationMatrix);
+
+
+
+				translationMatrix = glm::translate(translationMatrix, -missleLatVector*missleSpeed);
+
+				missleUpdate++;
+			}
+		}
+		else
+		{
+			translationMatrix = glm::translate(translationMatrix, -missleLatVector*missleSpeed);
+			missleUpdate++;
+		}
+	}
+
 
 };
 # endif

@@ -62,6 +62,9 @@ GLuint buffer[nModelsLoaded];   // Vertex Buffer Objects
 Camera * camera[nCameras];
 int toggleCam = 0;
 
+float shipMissleSpeed = 20.0f;
+float siteMissleSpeed = 5.0f;
+
 //camera view booleans
 bool cycleForward = true;
 bool cycleBackward = false;
@@ -71,6 +74,10 @@ bool atUnum = false;
 bool collide[nCollisions];
 
 bool gravity = false;
+
+bool activeMissleWarbird = false;
+bool activeMissleUnum = false;
+bool activeMissleSecundus = false;
 
 //debug boolean
 bool debug = false;
@@ -193,6 +200,16 @@ bool collision(glm::mat4 object1, glm::mat4 object2, float radius1, float radius
 	return collision;
 }
 
+float distance(glm::mat4 object1, glm::mat4 object2)
+{
+	glm::vec3 position1 = glm::vec3(object1[3]);
+	glm::vec3 position2 = glm::vec3(object2[3]);
+
+	float distance = pow(abs(position1.x - position2.x), 2) + pow(abs(position1.y - position2.y), 2) + pow(abs(position1.z - position2.z), 2);
+	//printf("distance = %f", distance);
+	return distance;
+}
+
 
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -210,7 +227,7 @@ void display() {
 	modelMatrix[8] = missileWarbird->getModelMatrix();
 	modelMatrix[9] = missileSiteUnum->getModelMatrix();
 	modelMatrix[10] = missileSiteSecundus->getModelMatrix();
-	modelMatrix[11] = missileWarbird->getModelMatrix();
+	modelMatrix[11] = missileSiteSecundus->getModelMatrix();
 
 	//showMat4("duo", modelMatrix[2]);
 	for (int m = 0; m < nModels; m++) {
@@ -267,7 +284,17 @@ void display() {
 			glBindVertexArray(VAO[8]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[8]);
 		}
-		else if (m > 7 && m < 11) //up to three missles
+		else if (m == 8 ) //site Unum missle
+		{
+			glBindVertexArray(VAO[6]);
+			glDrawArrays(GL_TRIANGLES, 0, nVertices[6]);
+		}
+		else if (m == 9 ) //site Secundus missle
+		{
+			glBindVertexArray(VAO[6]);
+			glDrawArrays(GL_TRIANGLES, 0, nVertices[6]);
+		}
+		else if (m == 10 ) //warbird missle
 		{
 			glBindVertexArray(VAO[6]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[6]);
@@ -306,7 +333,52 @@ void update(void){
 	warbird->update(gravity);
 	axes->update(gravity);
 	//if peron presses f then the fire missle function is called
-	missileWarbird->update(modelMatrix[6]);
+	if (activeMissleWarbird)
+	{
+		missileWarbird->update(modelMatrix[6], modelMatrix[7], shipMissleSpeed);
+	}
+	//check if unum missle site should fire a missle
+	if (distance(warbird->getModelMatrix(), siteUnum->MissleSite(unum->getModelMatrix(), siteUnum->getModelMatrix())) < pow(5000, 2) && !activeMissleUnum)
+	{
+		activeMissleUnum = true;
+		missileSiteUnum->translationMatrix = glm::translate(identity, glm::vec3(siteUnum->MissleSite(unum->getModelMatrix(), siteUnum->getModelMatrix())[3]));
+		missileSiteUnum->rotationMatrix = siteUnum->rotationMatrix * glm::rotate(identity, PI/2, glm::vec3(1,0,0));
+	}
+	//update unum missle
+	if (activeMissleUnum)
+		missileSiteUnum->update(warbird->getModelMatrix(), shipMissleSpeed);
+	//check if secundus missle site should fire a missle
+	if (distance(warbird->getModelMatrix(), modelMatrix[7]) < pow(5000, 2) && !activeMissleSecundus)
+	{
+		activeMissleSecundus = true;
+		missileSiteSecundus->translationMatrix = glm::translate(identity, glm::vec3(modelMatrix[7][3]));
+		missileSiteSecundus->rotationMatrix = siteSecundus->rotationMatrix * glm::rotate(identity, PI / 2, glm::vec3(1, 0, 0));
+	}
+	//update secundus missle
+	if (activeMissleSecundus)
+		missileSiteSecundus->update(warbird->getModelMatrix(), shipMissleSpeed);
+
+	if (missileWarbird->destroyMissle)
+	{
+		activeMissleWarbird = false;
+		missileWarbird->translationMatrix = glm::translate(identity, glm::vec3(0));
+		missileWarbird->destroyMissle = false;
+	}
+	if (missileSiteUnum->destroyMissle)
+	{
+		activeMissleUnum = false;
+		missileSiteUnum->translationMatrix = glm::translate(identity, glm::vec3(0));
+		missileSiteUnum->destroyMissle = false;
+		missileSiteUnum->missleUpdate = 0;
+	}
+	if (missileSiteSecundus->destroyMissle)
+	{
+		activeMissleSecundus = false;
+		missileSiteSecundus->translationMatrix = glm::translate(identity, glm::vec3(0));
+		missileSiteSecundus->destroyMissle = false;
+		missileSiteSecundus->missleUpdate = 0;
+	}
+
 	//check for collisions
 	collide[0] = collision(warbird->getModelMatrix(), ruber->getModelMatrix(), modelSize[5] + 10.0f, modelSize[0]);
 	collide[1] = collision(warbird->getModelMatrix(), unum->getModelMatrix(), modelSize[5] + 10.0f, modelSize[1]);
@@ -482,7 +554,14 @@ void keyboard(unsigned char key, int x, int y) {
 		//work in progress...
 	case 'f': case 'F':
 	
-		//missle->update();
+		if (activeMissleWarbird == false)
+		{
+			activeMissleWarbird = true;
+			missileWarbird->translationMatrix = warbird->translationMatrix;
+			missileWarbird->rotationMatrix = warbird->rotationMatrix;
+			missileWarbird->destroyMissle = false;
+			missileWarbird->missleUpdate = 0;
+		}
 		
 		break;
 
@@ -602,13 +681,15 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	secundus = new Planet(glm::vec3(1750, 0, 0), scale[4], 264 * 3, 0.002f, 150.0f, "Secundus.tri");
 	warbird = new Warbird(glm::vec3(5000, 1000, 5000), scale[5], 2772 * 3, 100.0f, "Warbird.tri");
 	axes = new Warbird(glm::vec3(5000, 1000, 5000), scale[7], 120 * 3, 100.0f, "axes-r100.tri");
-	missileWarbird = new Missle(glm::vec3(4900, 1000, 4850), scale[6], 644 * 3, 0.0f, 25.0f, "Missle.tri");
-	missileSiteUnum = new Missle(glm::vec3(4900, 1000, 4850), scale[6], 644 * 3, 0.0f, 25.0f, "Missle.tri");
-	missileSiteSecundus = new Missle(glm::vec3(4900, 1000, 4850), scale[6], 644 * 3, 0.0f, 25.0f, "Missle.tri");
+	missileWarbird = new Missle(glm::vec3(0, 0, 0), scale[6], 644 * 3, 0.0f, 25.0f, "Missle.tri");
+	missileSiteUnum = new Missle(glm::vec3(0, 0, 0), scale[6], 644 * 3, 0.0f, 25.0f, "Missle.tri");
+	missileSiteSecundus = new Missle(glm::vec3(0, 0, 0), scale[6], 644 * 3, 0.0f, 25.0f, "Missle.tri");
 	siteUnum = new Planet(glm::vec3(0, 200, 0), scale[8], 1382 * 3, 0.004f, 30.0f, "MissleBase.tri");
 	siteSecundus = new Planet(glm::vec3(0, 150, 0), scale[8], 1382 * 3, 0.002f, 30.0f, "MissleBase.tri");
 
 	missileWarbird->setMissleScale(glm::vec3(20.0));
+	missileSiteUnum->setMissleScale(glm::vec3(20.0));
+	missileSiteSecundus->setMissleScale(glm::vec3(20.0));
 
 	MVP = glGetUniformLocation(shaderProgram, "ModelViewProjection");
 
