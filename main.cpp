@@ -108,7 +108,7 @@ int updateCount = 0;  // for update rate
 double currentUpdateTime, lastUpdateTime, timeIntervalUpdate;
 
 // Shader handles, matrices, etc
-GLuint MVP;  // Model View Projection matrix's handle
+GLuint MVP, model_location; // Model View Projection matrix's handle
 GLuint vPosition[nModelsLoaded], vColor[nModelsLoaded], vNormal[nModelsLoaded];   // vPosition, vColor, vNormal handles for models
 // model, view, projection matrices and values to create modelMatrix.
 //loaded in order of Ruber, Umun, Duo, Primus, Secundus, Warbird, missiles
@@ -233,6 +233,8 @@ void display() {
 	for (int m = 0; m < nModels; m++) {
 		//dynamic cameras
 		//warbird camera
+
+		
 		if (cycleForward && toggleCam == 3 || cycleBackward && toggleCam == 2)
 		{
 			//(glm::vec3(5000.0f, 1300.0f, 6000.0f), glm::vec3(5000.0f, 1000.0f, 5000.0f), glm::vec3(0.0f, 1.0f, 0.0f)
@@ -273,7 +275,9 @@ void display() {
 
 		// glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr( modelMatrix)); 
 		ModelViewProjectionMatrix = projectionMatrix * viewMatrix * modelMatrix[m];
+		glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(modelMatrix[m]));
 		glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
+        model_location=glGetUniformLocation(shaderProgram,"model");
 		if (m < 6)
 		{
 			glBindVertexArray(VAO[m]);
@@ -669,6 +673,7 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 		scale[i] = glm::vec3(modelSize[i] * 1.0f / modelBR[i]);
 	}
 
+
 	for (int i = 0; i < nModelsLoaded; i++) {
 		printf("model size: %f, %f\n", modelBR[i], scale[i]);
 	}
@@ -691,7 +696,15 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	missileSiteUnum->setMissleScale(glm::vec3(20.0));
 	missileSiteSecundus->setMissleScale(glm::vec3(20.0));
 
+
+	//Set the positonal lighting
+
+	GLint light_Position_location = glGetUniformLocation(shaderProgram, "Light_Position");
+	glm::vec3 light_position = glm::vec3(0.0f, 5000.0f, 0.0f);
+	glUniform3f(light_Position_location, light_position.x, light_position.y, light_position.z);
+
 	MVP = glGetUniformLocation(shaderProgram, "ModelViewProjection");
+	model_location = glGetUniformLocation(shaderProgram, "Model_Location");
 
 	//// initially use a front view
 	//eye = glm::vec3(0.0f, 10000.0f, 20000.0f);   // camera's position
