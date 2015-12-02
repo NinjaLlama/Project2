@@ -44,7 +44,7 @@ const int X = 0, Y = 1, Z = 2, W = 3, START = 0, STOP = 1;
 const int nModelsLoaded = 9;  // number of model files
 const int nModels = 12;  // number of models in this scene (two missle sites and up to three active missles)
 const int nCameras = 5;
-const int nCollisions = 5;
+const int nCollisions = 8;
 char * modelFile[nModelsLoaded] = { "Ruber.tri", "Unum.tri ", "Duo.tri", "Primus.tri",
 "Segundus.tri", "BattleCruiser.tri", "Missle.tri", "axes-r100.tri", "MissleBase.tri" };
 float modelBR[nModelsLoaded];       // model's bounding radius
@@ -62,7 +62,7 @@ GLuint buffer[nModelsLoaded];   // Vertex Buffer Objects
 Camera * camera[nCameras];
 int toggleCam = 0;
 
-float shipMissleSpeed = 20.0f;
+float shipMissleSpeed = 30.0f;
 float siteMissleSpeed = 5.0f;
 
 //camera view booleans
@@ -339,7 +339,9 @@ void update(void){
 	//if peron presses f then the fire missle function is called
 	if (activeMissleWarbird)
 	{
-		missileWarbird->update(modelMatrix[6], modelMatrix[7], shipMissleSpeed);
+		missileWarbird->update(modelMatrix[7], shipMissleSpeed);
+		collide[5] = collision(modelMatrix[8], modelMatrix[6], modelSize[8] + 10.0f, modelSize[6]+20.0f);
+
 	}
 	//check if unum missle site should fire a missle
 	if (distance(warbird->getModelMatrix(), siteUnum->MissleSite(unum->getModelMatrix(), siteUnum->getModelMatrix())) < pow(5000, 2) && !activeMissleUnum)
@@ -350,7 +352,11 @@ void update(void){
 	}
 	//update unum missle
 	if (activeMissleUnum)
+	{
 		missileSiteUnum->update(warbird->getModelMatrix(), siteMissleSpeed);
+		collide[6] = collision(modelMatrix[9], modelMatrix[5], modelSize[9] + 10.0f, modelSize[5] + 20.0f);
+
+	}
 	//check if secundus missle site should fire a missle
 	if (distance(warbird->getModelMatrix(), modelMatrix[7]) < pow(5000, 2) && !activeMissleSecundus)
 	{
@@ -360,7 +366,11 @@ void update(void){
 	}
 	//update secundus missle
 	if (activeMissleSecundus)
+	{
 		missileSiteSecundus->update(warbird->getModelMatrix(), siteMissleSpeed);
+		collide[7] = collision(modelMatrix[10], modelMatrix[5], modelSize[10] + 10.0f, modelSize[5] + 20.0f);
+
+	}
 
 	if (missileWarbird->destroyMissle)
 	{

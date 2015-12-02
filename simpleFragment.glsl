@@ -22,7 +22,7 @@ uniform vec3 light_position=vec3(0.0f,5000.0f,0.0f);
 
 void main() {
 
-float ambient=7.0f;//scale the ambient light
+float ambient=10.0f;//scale the ambient light
 vec3 light_direction=normalize(light_position - vs_worldpos);
 vec3 normal=normalize(vs_normal);
 float diffuse=max(0.0,dot(normal,light_direction));
