@@ -65,9 +65,9 @@ public:
 		return glm::translate(glm::mat4(), glm::vec3(planetMatrix[3])) * moonMatrix;
 	}
 
-	glm::mat4 MissleSite(glm::mat4 &planetMatrix, glm::mat4 &missleMatrix)
+	glm::mat4 missileSite(glm::mat4 &planetMatrix, glm::mat4 &missileMatrix)
 	{
-		return glm::translate(glm::mat4(), glm::vec3(planetMatrix[3])) * missleMatrix;
+		return glm::translate(glm::mat4(), glm::vec3(planetMatrix[3])) * missileMatrix;
 	}
 
 	glm::mat4 getModelMatrix() {

@@ -35,18 +35,18 @@ and make sure 'Single Startup Project' is selected ***
 # include "object3D.hpp"
 # include "planet.hpp"
 # include "warbird.hpp"
-# include "missle.hpp"
+# include "missile.hpp"
 # include "camera.hpp"
 
 
 const int X = 0, Y = 1, Z = 2, W = 3, START = 0, STOP = 1;
 // constants for models:  file names, vertex count, model display size
 const int nModelsLoaded = 9;  // number of model files
-const int nModels = 12;  // number of models in this scene (two missle sites and up to three active missles)
+const int nModels = 12;  // number of models in this scene (two missile sites and up to three active missiles)
 const int nCameras = 5;
-const int nCollisions = 8;
+const int nCollisions = 9;
 char * modelFile[nModelsLoaded] = { "Ruber.tri", "Unum.tri ", "Duo.tri", "Primus.tri",
-"Segundus.tri", "BattleCruiser.tri", "Missle.tri", "axes-r100.tri", "MissleBase.tri" };
+"Segundus.tri", "BattleCruiser.tri", "missile.tri", "axes-r100.tri", "missileBase.tri" };
 float modelBR[nModelsLoaded];       // model's bounding radius
 float scaleValue[nModelsLoaded];    // model's scaling "size" value
 const int nVertices[nModelsLoaded] = { 264 * 3, 264 * 3, 278 * 3, 264 * 3, 264 * 3, 2772 * 3, 644 * 3, 120 * 3, 1382 * 3 };
@@ -62,22 +62,35 @@ GLuint buffer[nModelsLoaded];   // Vertex Buffer Objects
 Camera * camera[nCameras];
 int toggleCam = 0;
 
-float shipMissleSpeed = 30.0f;
-float siteMissleSpeed = 5.0f;
+float shipmissileSpeed = 20.0f;
+float sitemissileSpeed = 5.0f;
+
+int missileCountWarbird = 10;
+int missileCountUnum = 5;
+int missileCountSecundus = 5;
 
 //camera view booleans
 bool cycleForward = true;
 bool cycleBackward = false;
 
+//ship warp boolean
 bool atUnum = false;
 
-bool collide[nCollisions];
+//collision booleans
+bool warbirdCollision[nCollisions];
+bool warbirdMissileCollision[nCollisions];
+bool siteUnumMissileCollision[nCollisions];
+bool siteSecundusMissileCollision[nCollisions];
+
+bool siteUnumDestroyed = false;
+bool siteSecundusDestroyed = false;
 
 bool gravity = false;
 
-bool activeMissleWarbird = false;
-bool activeMissleUnum = false;
-bool activeMissleSecundus = false;
+//active missile booleans
+bool activemissileWarbird = false;
+bool activemissileUnum = false;
+bool activemissileSecundus = false;
 
 //debug boolean
 bool debug = false;
@@ -85,9 +98,9 @@ bool debug = false;
 // window title strings
 char baseStr[50] = "465 Project 1 : ";
 char viewStr[15] = "  View Front";
-char warbirdStr[15] = "  Warbird ??";
-char unumStr[15] = "  Unum ?";
-char secundusStr[15] = "  Secundus ?";
+char warbirdStr[15] = "  Warbird 10";
+char unumStr[15] = "  Unum 5";
+char secundusStr[15] = "  Secundus 5";
 char fpsStr[15] = "  F/S ??";
 char updateStr[20] = "  U/S ??";
 char titleStr[500];
@@ -138,9 +151,9 @@ Planet * primus;
 Planet * secundus;
 Warbird * warbird;
 Warbird * axes;
-Missle * missileWarbird;
-Missle * missileSiteUnum;
-Missle * missileSiteSecundus;
+missile * missileWarbird;
+missile * missileSiteUnum;
+missile * missileSiteSecundus;
 Planet * siteUnum;
 Planet * siteSecundus;
 
@@ -173,9 +186,32 @@ void updateTitle() {
 	//printf("title string = %s \n", titleStr);
 	for (int i = 0; i < nCollisions; i++)
 	{
-		if (collide[i])
+		if (warbirdCollision[i])
 		{
+			if (i == 5)
+				missileSiteUnum->destroymissile = true;
+			if (i == 6)
+				missileSiteSecundus->destroymissile = true;
 			strcpy(titleStr, "Your ship has been destroyed!");
+		}
+		if (warbirdMissileCollision[i] && (i == 0 || i == 1))
+		{
+			if (i == 0)
+				siteUnumDestroyed = true;
+			else
+				siteSecundusDestroyed = true;
+			strcpy(titleStr, "Missile site destroyed!");
+			missileWarbird->destroymissile = true;
+		}
+		if (siteUnumMissileCollision[i])
+		{
+			strcpy(titleStr, "Unum missile destroyed!");
+			missileSiteUnum->destroymissile = true;
+		}
+		if (siteSecundusMissileCollision[i])
+		{
+			strcpy(titleStr, "Secundus missile  destroyed!");
+			missileSiteSecundus->destroymissile = true;
 		}
 	}
 	glutSetWindowTitle(titleStr);
@@ -222,8 +258,8 @@ void display() {
 	modelMatrix[3] = primus->Moon(duo->getModelMatrix(), primus->getModelMatrix());
 	modelMatrix[4] = secundus->Moon(duo->getModelMatrix(), secundus->getModelMatrix());
 	modelMatrix[5] = warbird->getModelMatrix();
-	modelMatrix[6] = siteUnum->MissleSite(unum->getModelMatrix(), siteUnum->getModelMatrix());
-	modelMatrix[7] = siteSecundus->MissleSite(modelMatrix[4], siteSecundus->getModelMatrix());
+	modelMatrix[6] = siteUnum->missileSite(unum->getModelMatrix(), siteUnum->getModelMatrix());
+	modelMatrix[7] = siteSecundus->missileSite(modelMatrix[4], siteSecundus->getModelMatrix());
 	modelMatrix[8] = missileWarbird->getModelMatrix();
 	modelMatrix[9] = missileSiteUnum->getModelMatrix();
 	modelMatrix[10] = missileSiteSecundus->getModelMatrix();
@@ -283,22 +319,22 @@ void display() {
 			glBindVertexArray(VAO[m]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[m]);
 		}
-		else if (m == 6 || m == 7) //missle sites
+		else if (m == 6 || m == 7) //missile sites
 		{
 			glBindVertexArray(VAO[8]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[8]);
 		}
-		else if (m == 8 ) //site Unum missle
+		else if (m == 8 ) //site Unum missile
 		{
 			glBindVertexArray(VAO[6]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[6]);
 		}
-		else if (m == 9 ) //site Secundus missle
+		else if (m == 9 ) //site Secundus missile
 		{
 			glBindVertexArray(VAO[6]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[6]);
 		}
-		else if (m == 10 ) //warbird missle
+		else if (m == 10 ) //warbird missile
 		{
 			glBindVertexArray(VAO[6]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[6]);
@@ -336,69 +372,119 @@ void update(void){
 	secundus->update();
 	warbird->update(gravity);
 	axes->update(gravity);
-	//if peron presses f then the fire missle function is called
-	if (activeMissleWarbird)
+	//if peron presses f then the fire missile function is called
+	if (activemissileWarbird)
 	{
-		missileWarbird->update(modelMatrix[7], shipMissleSpeed);
-		collide[5] = collision(modelMatrix[8], modelMatrix[6], modelSize[8] + 10.0f, modelSize[6]+20.0f);
+		if (siteUnumDestroyed) //missile site Unum destroyed, missle should only seek Secundus site
+			missileWarbird->update(modelMatrix[7], shipmissileSpeed);
+		else if (siteSecundusDestroyed)  //missile site Secundus destroyed, missle should only seek Unum site
+			missileWarbird->update(modelMatrix[6], shipmissileSpeed);
+		else //missile can seek either Unum or Secundus site
+			missileWarbird->update(modelMatrix[6], modelMatrix[7], shipmissileSpeed);
+
+		warbirdMissileCollision[0] = collision(modelMatrix[8], modelMatrix[6], modelSize[8] + 10.0f, modelSize[6] + 20.0f); //missile hits site Unum
+		warbirdMissileCollision[1] = collision(modelMatrix[8], modelMatrix[7], modelSize[8] + 10.0f, modelSize[7] + 20.0f); //missile hits site Secundus
+		//warbird missile collision with planets
+		warbirdMissileCollision[2] = collision(modelMatrix[8], ruber->getModelMatrix(), modelSize[8] + 10.0f, modelSize[0]);
+		warbirdMissileCollision[3] = collision(modelMatrix[8], unum->getModelMatrix(), modelSize[8] + 10.0f, modelSize[1]);
+		warbirdMissileCollision[4] = collision(modelMatrix[8], duo->getModelMatrix(), modelSize[8] + 10.0f, modelSize[2]);
+		warbirdMissileCollision[5] = collision(modelMatrix[8], primus->Moon(duo->getModelMatrix(), primus->getModelMatrix()), modelSize[8] + 10.0f, modelSize[3]);
+		warbirdMissileCollision[6] = collision(modelMatrix[8], secundus->Moon(duo->getModelMatrix(), secundus->getModelMatrix()), modelSize[8] + 10.0f, modelSize[4]);
+		//warbird missile collision with warbird
+		if (missileWarbird->missileUpdate > 200) //after missile is live
+		{
+			warbirdCollision[7] = collision(modelMatrix[8], modelMatrix[5], modelSize[8] + 10.0f, modelSize[5] + 20.0f);
+		}
 
 	}
-	//check if unum missle site should fire a missle
-	if (distance(warbird->getModelMatrix(), siteUnum->MissleSite(unum->getModelMatrix(), siteUnum->getModelMatrix())) < pow(5000, 2) && !activeMissleUnum)
+	//check if unum missile site should fire a missile
+	if (distance(warbird->getModelMatrix(), siteUnum->missileSite(unum->getModelMatrix(), siteUnum->getModelMatrix())) < pow(5000, 2) && (!activemissileUnum && missileCountUnum != 0))
 	{
-		activeMissleUnum = true;
-		missileSiteUnum->translationMatrix = glm::translate(identity, glm::vec3(siteUnum->MissleSite(unum->getModelMatrix(), siteUnum->getModelMatrix())[3]));
+		activemissileUnum = true;
+		missileSiteUnum->translationMatrix = glm::translate(identity, glm::vec3(siteUnum->missileSite(unum->getModelMatrix(), siteUnum->getModelMatrix())[3]));
 		missileSiteUnum->rotationMatrix = siteUnum->rotationMatrix * glm::rotate(identity, PI/2, glm::vec3(1,0,0));
-	}
-	//update unum missle
-	if (activeMissleUnum)
-	{
-		missileSiteUnum->update(warbird->getModelMatrix(), siteMissleSpeed);
-		collide[6] = collision(modelMatrix[9], modelMatrix[5], modelSize[9] + 10.0f, modelSize[5] + 20.0f);
+		missileCountUnum--;
+		sprintf(unumStr, "  Unum %2d", missileCountUnum);
 
 	}
-	//check if secundus missle site should fire a missle
-	if (distance(warbird->getModelMatrix(), modelMatrix[7]) < pow(5000, 2) && !activeMissleSecundus)
+	//update unum missile
+	if (activemissileUnum)
 	{
-		activeMissleSecundus = true;
+		missileSiteUnum->update(warbird->getModelMatrix(), sitemissileSpeed);
+		warbirdCollision[5] = collision(modelMatrix[9], modelMatrix[5], modelSize[9] + 10.0f, modelSize[5] + 20.0f); //Unum missile hits warbird
+		//missile Unum collision with planets
+		if (missileSiteUnum->missileUpdate > 200)
+		{
+			siteUnumMissileCollision[0] = collision(modelMatrix[9], ruber->getModelMatrix(), modelSize[9] + 10.0f, modelSize[0]);
+			siteUnumMissileCollision[1] = collision(modelMatrix[9], unum->getModelMatrix(), modelSize[9] + 10.0f, modelSize[1]);
+			siteUnumMissileCollision[2] = collision(modelMatrix[9], duo->getModelMatrix(), modelSize[9] + 10.0f, modelSize[2]);
+			siteUnumMissileCollision[3] = collision(modelMatrix[9], primus->Moon(duo->getModelMatrix(), primus->getModelMatrix()), modelSize[9] + 10.0f, modelSize[3]);
+			siteUnumMissileCollision[4] = collision(modelMatrix[9], secundus->Moon(duo->getModelMatrix(), secundus->getModelMatrix()), modelSize[9] + 10.0f, modelSize[4]);
+		}
+
+	}
+	//check if secundus missile site should fire a missile
+	if (distance(warbird->getModelMatrix(), modelMatrix[7]) < pow(5000, 2) && (!activemissileSecundus && missileCountSecundus != 0))
+	{
+		activemissileSecundus = true;
 		missileSiteSecundus->translationMatrix = glm::translate(identity, glm::vec3(modelMatrix[7][3]));
 		missileSiteSecundus->rotationMatrix = siteSecundus->rotationMatrix * glm::rotate(identity, PI / 2, glm::vec3(1, 0, 0));
-	}
-	//update secundus missle
-	if (activeMissleSecundus)
-	{
-		missileSiteSecundus->update(warbird->getModelMatrix(), siteMissleSpeed);
-		collide[7] = collision(modelMatrix[10], modelMatrix[5], modelSize[10] + 10.0f, modelSize[5] + 20.0f);
+		missileCountSecundus--;
+		sprintf(secundusStr, "  Secundus %2d", missileCountSecundus);
 
 	}
-
-	if (missileWarbird->destroyMissle)
+	//update secundus missile
+	if (activemissileSecundus)
 	{
-		activeMissleWarbird = false;
+		missileSiteSecundus->update(warbird->getModelMatrix(), sitemissileSpeed);
+		warbirdCollision[6] = collision(modelMatrix[10], modelMatrix[5], modelSize[10] + 10.0f, modelSize[5] + 20.0f);  //Secundus missile hits warbird
+		//missile Secundus collision with planets
+		if (missileSiteSecundus->missileUpdate > 200)
+		{
+			siteSecundusMissileCollision[0] = collision(modelMatrix[10], ruber->getModelMatrix(), modelSize[10] + 10.0f, modelSize[0]);
+			siteSecundusMissileCollision[1] = collision(modelMatrix[10], unum->getModelMatrix(), modelSize[10] + 10.0f, modelSize[1]);
+			siteSecundusMissileCollision[2] = collision(modelMatrix[10], duo->getModelMatrix(), modelSize[10] + 10.0f, modelSize[2]);
+			siteSecundusMissileCollision[3] = collision(modelMatrix[10], primus->Moon(duo->getModelMatrix(), primus->getModelMatrix()), modelSize[10] + 10.0f, modelSize[3]);
+			siteSecundusMissileCollision[4] = collision(modelMatrix[10], secundus->Moon(duo->getModelMatrix(), secundus->getModelMatrix()), modelSize[10] + 10.0f, modelSize[4]);
+		}
+	}
+	//handle missile destruction
+	if (missileWarbird->destroymissile)
+	{
+		activemissileWarbird = false;
 		missileWarbird->translationMatrix = glm::translate(identity, glm::vec3(0));
-		missileWarbird->destroyMissle = false;
+		missileWarbird->destroymissile = false;
 	}
-	if (missileSiteUnum->destroyMissle)
+	if (missileSiteUnum->destroymissile)
 	{
-		activeMissleUnum = false;
+		activemissileUnum = false;
 		missileSiteUnum->translationMatrix = glm::translate(identity, glm::vec3(0));
-		missileSiteUnum->destroyMissle = false;
-		missileSiteUnum->missleUpdate = 0;
+		missileSiteUnum->destroymissile = false;
+		missileSiteUnum->missileUpdate = 0;
 	}
-	if (missileSiteSecundus->destroyMissle)
+	if (missileSiteSecundus->destroymissile)
 	{
-		activeMissleSecundus = false;
+		activemissileSecundus = false;
 		missileSiteSecundus->translationMatrix = glm::translate(identity, glm::vec3(0));
-		missileSiteSecundus->destroyMissle = false;
-		missileSiteSecundus->missleUpdate = 0;
+		missileSiteSecundus->destroymissile = false;
+		missileSiteSecundus->missileUpdate = 0;
+	}
+	//handle missile site destruction
+	if (siteUnumDestroyed)
+	{
+		siteUnum->translationMatrix = glm::translate(identity, glm::vec3(0));
+	}
+	if (siteSecundusDestroyed)
+	{
+		siteSecundus->translationMatrix = glm::translate(identity, glm::vec3(0));
 	}
 
-	//check for collisions
-	collide[0] = collision(warbird->getModelMatrix(), ruber->getModelMatrix(), modelSize[5] + 10.0f, modelSize[0]);
-	collide[1] = collision(warbird->getModelMatrix(), unum->getModelMatrix(), modelSize[5] + 10.0f, modelSize[1]);
-	collide[2] = collision(warbird->getModelMatrix(), duo->getModelMatrix(), modelSize[5] + 10.0f, modelSize[2]);
-	collide[3] = collision(warbird->getModelMatrix(), primus->Moon(duo->getModelMatrix(), primus->getModelMatrix()), modelSize[5] + 10.0f, modelSize[3]);
-	collide[4] = collision(warbird->getModelMatrix(), secundus->Moon(duo->getModelMatrix(), secundus->getModelMatrix()), modelSize[5] + 10.0f, modelSize[4]);
+	//check for warbird collisions with planets
+	warbirdCollision[0] = collision(warbird->getModelMatrix(), ruber->getModelMatrix(), modelSize[5] + 10.0f, modelSize[0]);
+	warbirdCollision[1] = collision(warbird->getModelMatrix(), unum->getModelMatrix(), modelSize[5] + 10.0f, modelSize[1]);
+	warbirdCollision[2] = collision(warbird->getModelMatrix(), duo->getModelMatrix(), modelSize[5] + 10.0f, modelSize[2]);
+	warbirdCollision[3] = collision(warbird->getModelMatrix(), primus->Moon(duo->getModelMatrix(), primus->getModelMatrix()), modelSize[5] + 10.0f, modelSize[3]);
+	warbirdCollision[4] = collision(warbird->getModelMatrix(), secundus->Moon(duo->getModelMatrix(), secundus->getModelMatrix()), modelSize[5] + 10.0f, modelSize[4]);
 	
 
 	updateCount++;
@@ -564,17 +650,19 @@ void keyboard(unsigned char key, int x, int y) {
 
 		break;
 
-		//fires the ships missles
+		//fires the ships missiles
 		//work in progress...
 	case 'f': case 'F':
 	
-		if (activeMissleWarbird == false)
+		if ((activemissileWarbird == false && missileCountWarbird != 0) && !(siteUnumDestroyed && siteSecundusDestroyed))
 		{
-			activeMissleWarbird = true;
+			activemissileWarbird = true;
 			missileWarbird->translationMatrix = warbird->translationMatrix;
 			missileWarbird->rotationMatrix = warbird->rotationMatrix;
-			missileWarbird->destroyMissle = false;
-			missileWarbird->missleUpdate = 0;
+			missileWarbird->destroymissile = false;
+			missileWarbird->missileUpdate = 0;
+			missileCountWarbird--;
+			sprintf(warbirdStr, "  Warbird %2d", missileCountWarbird);
 		}
 		
 		break;
@@ -659,7 +747,7 @@ void init() {
 	glUseProgram(shaderProgram);
 
 	/*char * modelFile[nModels] = { "Ruber.tri", "Unum.tri ", "Duo.tri", "Primus.tri",
-		"Segundus.tri", "BattleCruiser.tri", "Missle.tri" };
+		"Segundus.tri", "BattleCruiser.tri", "missile.tri" };
 	float modelBR[nModels];       // model's bounding radius
 	float scaleValue[nModels];    // model's scaling "size" value
 	const int nVertices[nModels] = { 264 * 3, 264 * 3, 278 * 3, 264 * 3, 264 * 3, 2772 * 3, 644 * 3 };
@@ -696,15 +784,15 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	secundus = new Planet(glm::vec3(1750, 0, 0), scale[4], 264 * 3, 0.002f, 150.0f, "Secundus.tri");
 	warbird = new Warbird(glm::vec3(5000, 1000, 5000), scale[5], 2772 * 3, 100.0f, "Warbird.tri");
 	axes = new Warbird(glm::vec3(5000, 1000, 5000), scale[7], 120 * 3, 100.0f, "axes-r100.tri");
-	missileWarbird = new Missle(glm::vec3(0, 0, 0), scale[6], 644 * 3, 0.0f, 25.0f, "Missle.tri");
-	missileSiteUnum = new Missle(glm::vec3(0, 0, 0), scale[6], 644 * 3, 0.0f, 25.0f, "Missle.tri");
-	missileSiteSecundus = new Missle(glm::vec3(0, 0, 0), scale[6], 644 * 3, 0.0f, 25.0f, "Missle.tri");
-	siteUnum = new Planet(glm::vec3(0, 200, 0), scale[8], 1382 * 3, 0.004f, 30.0f, "MissleBase.tri");
-	siteSecundus = new Planet(glm::vec3(0, 150, 0), scale[8], 1382 * 3, 0.002f, 30.0f, "MissleBase.tri");
+	missileWarbird = new missile(glm::vec3(0, 0, 0), scale[6], 644 * 3, 0.0f, 25.0f, "missile.tri");
+	missileSiteUnum = new missile(glm::vec3(0, 0, 0), scale[6], 644 * 3, 0.0f, 25.0f, "missile.tri");
+	missileSiteSecundus = new missile(glm::vec3(0, 0, 0), scale[6], 644 * 3, 0.0f, 25.0f, "missile.tri");
+	siteUnum = new Planet(glm::vec3(0, 200, 0), scale[8], 1382 * 3, 0.004f, 30.0f, "missileBase.tri");
+	siteSecundus = new Planet(glm::vec3(0, 150, 0), scale[8], 1382 * 3, 0.002f, 30.0f, "missileBase.tri");
 
-	missileWarbird->setMissleScale(glm::vec3(20.0));
-	missileSiteUnum->setMissleScale(glm::vec3(20.0));
-	missileSiteSecundus->setMissleScale(glm::vec3(20.0));
+	missileWarbird->setmissileScale(glm::vec3(20.0));
+	missileSiteUnum->setmissileScale(glm::vec3(20.0));
+	missileSiteSecundus->setmissileScale(glm::vec3(20.0));
 
 
 	//Set the positonal lighting
