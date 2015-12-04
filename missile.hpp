@@ -42,7 +42,7 @@ public:
 
 	float rotation;
 	int missileUpdate = 0;
-	int maxUpdate = 2000;
+	int maxUpdate = 1000;
 	bool destroymissile = false;
 
 	missile(glm::vec3 translate, glm::vec3 scale, int vertices, float rotation, float radius, char * modelFile) : Object3D(translate, scale, vertices, rotation, radius, modelFile)

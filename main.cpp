@@ -84,6 +84,7 @@ bool siteSecundusMissileCollision[nCollisions];
 
 bool siteUnumDestroyed = false;
 bool siteSecundusDestroyed = false;
+bool warbirdDestroyed = false;
 
 bool gravity = false;
 
@@ -184,36 +185,12 @@ void updateTitle() {
 	strcat(titleStr, fpsStr);
 	strcat(titleStr, viewStr);
 	//printf("title string = %s \n", titleStr);
-	for (int i = 0; i < nCollisions; i++)
-	{
-		if (warbirdCollision[i])
-		{
-			if (i == 5)
-				missileSiteUnum->destroymissile = true;
-			if (i == 6)
-				missileSiteSecundus->destroymissile = true;
-			strcpy(titleStr, "Your ship has been destroyed!");
-		}
-		if (warbirdMissileCollision[i] && (i == 0 || i == 1))
-		{
-			if (i == 0)
-				siteUnumDestroyed = true;
-			else
-				siteSecundusDestroyed = true;
-			strcpy(titleStr, "Missile site destroyed!");
-			missileWarbird->destroymissile = true;
-		}
-		if (siteUnumMissileCollision[i])
-		{
-			strcpy(titleStr, "Unum missile destroyed!");
-			missileSiteUnum->destroymissile = true;
-		}
-		if (siteSecundusMissileCollision[i])
-		{
-			strcpy(titleStr, "Secundus missile  destroyed!");
-			missileSiteSecundus->destroymissile = true;
-		}
-	}
+	if (warbirdDestroyed)
+		strcpy(titleStr, "Your ship has been destroyed!");
+	if ((missileCountWarbird == 0 && !activemissileWarbird) && !(siteUnumDestroyed && siteSecundusDestroyed))
+		strcpy(titleStr, "Cadet resigns from War College");
+	if (siteUnumDestroyed && siteSecundusDestroyed)
+		strcpy(titleStr, "Cadet passes flight training");
 	glutSetWindowTitle(titleStr);
 }
 
@@ -486,6 +463,38 @@ void update(void){
 	warbirdCollision[3] = collision(warbird->getModelMatrix(), primus->Moon(duo->getModelMatrix(), primus->getModelMatrix()), modelSize[5] + 10.0f, modelSize[3]);
 	warbirdCollision[4] = collision(warbird->getModelMatrix(), secundus->Moon(duo->getModelMatrix(), secundus->getModelMatrix()), modelSize[5] + 10.0f, modelSize[4]);
 	
+	for (int i = 0; i < nCollisions; i++)
+	{
+		if (warbirdCollision[i])
+		{
+			if (i == 5)
+				missileSiteUnum->destroymissile = true;
+			if (i == 6)
+				missileSiteSecundus->destroymissile = true;
+			else
+				warbirdDestroyed = true;
+			
+		}
+		if (warbirdMissileCollision[i] && (i == 0 || i == 1))
+		{
+			if (i == 0)
+				siteUnumDestroyed = true;
+			else
+				siteSecundusDestroyed = true;
+			//strcpy(titleStr, "Missile site destroyed!");
+			missileWarbird->destroymissile = true;
+		}
+		if (siteUnumMissileCollision[i])
+		{
+			//strcpy(titleStr, "Unum missile destroyed!");
+			missileSiteUnum->destroymissile = true;
+		}
+		if (siteSecundusMissileCollision[i])
+		{
+			//strcpy(titleStr, "Secundus missile  destroyed!");
+			missileSiteSecundus->destroymissile = true;
+		}
+	}
 
 	updateCount++;
 	// see if a second has passed to set estimated fps information
@@ -514,6 +523,7 @@ void intervalTimer(int i) {
 		}
 	}
 	if (!collision)*/
+	//if (!warbirdDestroyed)
 	update();
 }
 
