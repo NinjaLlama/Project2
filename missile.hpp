@@ -118,29 +118,34 @@ public:
 				angle = acos(angle);*/
 			//printf("angle = %f\n", angle);
 			angle = angle / 3;
-
-			if (colinear(directionVector, -missileLatVector, .2f) == true)
+			if (colinear(directionVector, -missileLatVector, .2f) == true && dot(directionVector, -missileLatVector) == 1.0f)
 			{
-				targetVector = glm::vec3(targetVector.x + .1f, targetVector.y + (-0.2f), targetVector.z + 0.1f);
+				//nothing
 			}
-			glm::vec3 axis = glm::normalize(glm::cross(glm::normalize(targetVector - missileVector), -missileLatVector));
-			//glm::vec3 axis = glm::vec3(0, 1, 0);
-			float axisDirection = axis.x + axis.y + axis.z;
-			if (axisDirection >= 0) // adjust rotational value
-				radian = angle;
 			else
-				radian = 2 * PI - angle;
-			//printf("radian = %f\n", radian);
-			if (dot(directionVector, -missileLatVector) < .98f)
 			{
+				if (colinear(directionVector, -missileLatVector, .2f) == true)
+				{
+					targetVector = glm::vec3(targetVector.x + .1f, targetVector.y + (-0.2f), targetVector.z + 0.1f);
+				}
+				glm::vec3 axis = glm::normalize(glm::cross(glm::normalize(targetVector - missileVector), -missileLatVector));
+				//glm::vec3 axis = glm::vec3(0, 1, 0);
+				float axisDirection = axis.x + axis.y + axis.z;
+				if (axisDirection >= 0) // adjust rotational value
+					radian = angle;
+				else
+					radian = 2 * PI - angle;
+				//printf("radian = %f\n", radian);
+				if (dot(directionVector, -missileLatVector) < .98f)
+				{
 
-				rotationMatrix = glm::rotate(rotationMatrix, radian, axis);
+					rotationMatrix = glm::rotate(rotationMatrix, radian, axis);
+				}
+
+
+				//showMat4("rotation", rotationMatrix);
+
 			}
-
-
-			//showMat4("rotation", rotationMatrix);
-
-
 
 			translationMatrix = glm::translate(translationMatrix, -missileLatVector*missileSpeed);
 
@@ -247,30 +252,35 @@ public:
 						angle = acos(angle);*/
 					//printf("angle = %f\n", angle);
 					angle = angle / 3;
-
-					if (colinear(direction1Vector, -missileLatVector, .2f) == true)
+					if (colinear(direction1Vector, -missileLatVector, .2f) == true && dot(direction1Vector, -missileLatVector) == 1.0f)
 					{
-						target1Vector = glm::vec3(target1Vector.x + .1f, target1Vector.y + (-0.2f), target1Vector.z + 0.1f);
+						//nothing
 					}
-					glm::vec3 axis = glm::normalize(glm::cross(glm::normalize(target1Vector - missileVector), -missileLatVector));
-					//glm::vec3 axis = glm::vec3(0, 1, 0);
-					float axisDirection = axis.x + axis.y + axis.z;
-					if (axisDirection >= 0) // adjust rotational value
-						radian = angle;
 					else
-						radian = 2 * PI - angle;
-					//printf("radian = %f\n", radian);
-					if (dot(direction1Vector, -missileLatVector) < .98f)
 					{
+						if (colinear(direction1Vector, -missileLatVector, .2f) == true)
+						{
+							target1Vector = glm::vec3(target1Vector.x + .1f, target1Vector.y + (-0.2f), target1Vector.z + 0.1f);
+						}
+						glm::vec3 axis = glm::normalize(glm::cross(glm::normalize(target1Vector - missileVector), -missileLatVector));
+						//glm::vec3 axis = glm::vec3(0, 1, 0);
+						float axisDirection = axis.x + axis.y + axis.z;
+						if (axisDirection >= 0) // adjust rotational value
+							radian = angle;
+						else
+							radian = 2 * PI - angle;
+						//printf("radian = %f\n", radian);
+						if (dot(direction1Vector, -missileLatVector) < .98f)
+						{
 
-						rotationMatrix = glm::rotate(rotationMatrix, radian, axis);
+							rotationMatrix = glm::rotate(rotationMatrix, radian, axis);
+						}
+
+
+						//showMat4("rotation", rotationMatrix);
+
+
 					}
-
-
-					//showMat4("rotation", rotationMatrix);
-
-
-
 					translationMatrix = glm::translate(translationMatrix, -missileLatVector*missileSpeed);
 
 					missileUpdate++;
@@ -297,29 +307,34 @@ public:
 						angle = acos(angle);*/
 					//printf("angle = %f\n", angle);
 					angle = angle / 3;
-
-					if (colinear(direction2Vector, -missileLatVector, .2f) == true)
+					if (colinear(direction2Vector, -missileLatVector, .2f) == true && dot(direction2Vector, -missileLatVector) == 1.0f)
 					{
-						target2Vector = glm::vec3(target2Vector.x + .1f, target2Vector.y + (-0.2f), target2Vector.z + 0.1f);
+						//nothing
 					}
-					glm::vec3 axis = glm::normalize(glm::cross(glm::normalize(target2Vector - missileVector), -missileLatVector));
-					//glm::vec3 axis = glm::vec3(0, 1, 0);
-					float axisDirection = axis.x + axis.y + axis.z;
-					if (axisDirection >= 0) // adjust rotational value
-						radian = angle;
 					else
-						radian = 2 * PI - angle;
-					//printf("radian = %f\n", radian);
-					if (dot(direction2Vector, -missileLatVector) < .98f)
 					{
+						if (colinear(direction2Vector, -missileLatVector, .2f) == true)
+						{
+							target2Vector = glm::vec3(target2Vector.x + .1f, target2Vector.y + (-0.2f), target2Vector.z + 0.1f);
+						}
+						glm::vec3 axis = glm::normalize(glm::cross(glm::normalize(target2Vector - missileVector), -missileLatVector));
+						//glm::vec3 axis = glm::vec3(0, 1, 0);
+						float axisDirection = axis.x + axis.y + axis.z;
+						if (axisDirection >= 0) // adjust rotational value
+							radian = angle;
+						else
+							radian = 2 * PI - angle;
+						//printf("radian = %f\n", radian);
+						if (dot(direction2Vector, -missileLatVector) < .98f)
+						{
 
-						rotationMatrix = glm::rotate(rotationMatrix, radian, axis);
+							rotationMatrix = glm::rotate(rotationMatrix, radian, axis);
+						}
+
+
+						//showMat4("rotation", rotationMatrix);
+
 					}
-
-
-					//showMat4("rotation", rotationMatrix);
-
-
 
 					translationMatrix = glm::translate(translationMatrix, -missileLatVector*missileSpeed);
 

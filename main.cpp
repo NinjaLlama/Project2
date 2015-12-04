@@ -800,7 +800,7 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	siteUnum = new Planet(glm::vec3(0, 200, 0), scale[8], 1382 * 3, 0.004f, 30.0f, "missileBase.tri");
 	siteSecundus = new Planet(glm::vec3(0, 150, 0), scale[8], 1382 * 3, 0.002f, 30.0f, "missileBase.tri");
 
-	missileWarbird->setmissileScale(glm::vec3(20.0));
+	//missileWarbird->setmissileScale(glm::vec3(20.0));
 	missileSiteUnum->setmissileScale(glm::vec3(20.0));
 	missileSiteSecundus->setmissileScale(glm::vec3(20.0));
 
