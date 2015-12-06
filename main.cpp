@@ -32,6 +32,7 @@ and make sure 'Single Startup Project' is selected ***
 # include "../includes465/include465.hpp"
 # define __INCLUDES465__
 # endif
+# include "../includes465/texture.hpp"
 # include "object3D.hpp"
 # include "planet.hpp"
 # include "warbird.hpp"
@@ -41,20 +42,37 @@ and make sure 'Single Startup Project' is selected ***
 
 const int X = 0, Y = 1, Z = 2, W = 3, START = 0, STOP = 1;
 // constants for models:  file names, vertex count, model display size
-const int nModelsLoaded = 9;  // number of model files
-const int nModels = 12;  // number of models in this scene (two missile sites and up to three active missiles)
+const int nModelsLoaded = 10;  // number of model files
+const int nModels = 13;  // number of models in this scene (two missile sites and up to three active missiles)
 const int nCameras = 5;
 const int nCollisions = 9;
 char * modelFile[nModelsLoaded] = { "Ruber.tri", "Unum.tri ", "Duo.tri", "Primus.tri",
-"Segundus.tri", "BattleCruiser.tri", "missile.tri", "axes-r100.tri", "missileBase.tri" };
+"Segundus.tri", "BattleCruiser.tri", "missile.tri", "axes-r100.tri", "missileBase.tri", "plane.tri" };
 float modelBR[nModelsLoaded];       // model's bounding radius
 float scaleValue[nModelsLoaded];    // model's scaling "size" value
-const int nVertices[nModelsLoaded] = { 264 * 3, 264 * 3, 278 * 3, 264 * 3, 264 * 3, 2772 * 3, 644 * 3, 120 * 3, 1382 * 3 };
+const int nVertices[nModelsLoaded] = { 264 * 3, 264 * 3, 278 * 3, 264 * 3, 264 * 3, 2772 * 3, 644 * 3, 120 * 3, 1382 * 3, 2*3 };
 char * vertexShaderFile = "simpleVertex.glsl";
 char * fragmentShaderFile = "simpleFragment.glsl";
 GLuint shaderProgram;
 GLuint VAO[nModelsLoaded];      // Vertex Array Objects
 GLuint buffer[nModelsLoaded];   // Vertex Buffer Objects
+
+int width = 640, height = 480;    
+char * fileName = "rawFile2.raw";   
+GLuint texture, Texture, vTexCoord, showTexture;  // texture id
+
+static const GLfloat point[] = {
+	0.615, 0.435, 0, -0.615, -0.435, 0, -0.615, 0.435,0
+	-0.615, -0.435, 0, 0.615, 0.435, 0, 0.615, -0.435,0 };
+
+// Texture Coordinates for each vertex
+// points * 2 (s, t)
+static const GLfloat texCoords[] = {
+	0.0f, 0.0f,     // 0
+	1.0f, 0.0f,     // 1
+	1.0f, 1.0f,     // 2
+	0.0f, 1.0f     // 3
+};   
 
 //// vectors and values for lookAt
 //glm::vec3 eye, at, up;
@@ -126,24 +144,15 @@ GLuint MVP, model_location; // Model View Projection matrix's handle
 GLuint vPosition[nModelsLoaded], vColor[nModelsLoaded], vNormal[nModelsLoaded];   // vPosition, vColor, vNormal handles for models
 // model, view, projection matrices and values to create modelMatrix.
 //loaded in order of Ruber, Umun, Duo, Primus, Secundus, Warbird, missiles
-float modelSize[nModelsLoaded] = { 2000.0f, 200.0f, 400.0f, 100.0f, 150.0f, 150.0f, 25.0f, 150.0f, 30.0f };   // size of model
+float modelSize[nModelsLoaded] = { 2000.0f, 200.0f, 400.0f, 100.0f, 150.0f, 150.0f, 25.0f, 150.0f, 30.0f, 2000.0f };   // size of model
 glm::vec3 scale[nModelsLoaded];       // set in init()
 glm::vec3 translate[nModelsLoaded] = { glm::vec3(0, 0, 0), glm::vec3(4000, 0, 0), glm::vec3(9000, 0, 0),
 glm::vec3(900, 0, 0), glm::vec3(1750, 0, 0),
-glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850), glm::vec3(5000, 1000, 5000)
+glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850), glm::vec3(5000, 1000, 5000), glm::vec3(5000, 1000, 5000)
 
 
 };
 
-//Unum and Duo matrices
-glm::mat4 DuoMatrix;
-glm::vec3 DuoTranslate;
-/*glm::mat4 axesMatrix;		//for debugging
-glm::vec3 axesTranslate;
-glm::mat4 axesRotation = glm::rotate(identity, PI, glm::vec3(0, 1, 0));*/
-glm::mat4 DuoRotation = glm::rotate(identity, PI, glm::vec3(0, 1, 0)); //used to rotate Duo 180 degrees CCW, since Duo is initial placed at +9000 on X
-glm::mat4 UnumMatrix;
-glm::vec3 UnumTranslate;
 
 Planet * ruber;
 Planet * unum;
@@ -157,6 +166,7 @@ missile * missileSiteUnum;
 missile * missileSiteSecundus;
 Planet * siteUnum;
 Planet * siteSecundus;
+Planet * plane;
 
 glm::mat4 modelMatrix[nModels];          // set in display()
 glm::mat4 viewMatrix;           // set in init()
@@ -227,8 +237,7 @@ float distance(glm::mat4 object1, glm::mat4 object2)
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	// update model matrix
-	
-
+	glUniform1f(showTexture, 0);
 	modelMatrix[0] = ruber->getModelMatrix();
 	modelMatrix[1] = unum->getModelMatrix();
 	modelMatrix[2] = duo->getModelMatrix();
@@ -241,6 +250,7 @@ void display() {
 	modelMatrix[9] = missileSiteUnum->getModelMatrix();
 	modelMatrix[10] = missileSiteSecundus->getModelMatrix();
 	modelMatrix[11] = missileSiteSecundus->getModelMatrix();
+	modelMatrix[12] = plane->getModelMatrix();
 
 	//showMat4("duo", modelMatrix[2]);
 	for (int m = 0; m < nModels; m++) {
@@ -285,7 +295,7 @@ void display() {
 			camera[4]->up = glm::vec3(0.0f, 1.0f, 0.0f);                 // camera's up is Y
 			viewMatrix = camera[4]->getViewMatrix();
 		}
-
+		
 		// glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr( modelMatrix)); 
 		ModelViewProjectionMatrix = projectionMatrix * viewMatrix * modelMatrix[m];
 		glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(modelMatrix[m]));
@@ -321,13 +331,18 @@ void display() {
 			glBindVertexArray(VAO[7]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[7]);
 		}
+		else if (m == 12)
+		{
+			glUniform1f(showTexture, 1);
+			glBindVertexArray(VAO[9]);
+			glDrawArrays(GL_TRIANGLES, 0, nVertices[9]);
+		}
 		else
 		{
 			//do nothing
 		}
 
 	}
-
 	glutSwapBuffers();
 	frameCount++;
 	// see if a second has passed to set estimated fps information
@@ -800,6 +815,8 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	siteUnum = new Planet(glm::vec3(0, 200, 0), scale[8], 1382 * 3, 0.004f, 30.0f, "missileBase.tri");
 	siteSecundus = new Planet(glm::vec3(0, 150, 0), scale[8], 1382 * 3, 0.002f, 30.0f, "missileBase.tri");
 
+	plane = new Planet(glm::vec3(4000, 0, 0), scale[9], 2 * 3, 0.000f, 2000.0f, "plane.tri");
+
 	//missileWarbird->setmissileScale(glm::vec3(20.0));
 	missileSiteUnum->setmissileScale(glm::vec3(20.0));
 	missileSiteSecundus->setmissileScale(glm::vec3(20.0));
@@ -818,6 +835,24 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	//eye = glm::vec3(0.0f, 10000.0f, 20000.0f);   // camera's position
 	//at = glm::vec3(0);						   // position camera is looking at
 	//up = glm::vec3(0.0f, 1.0f, 0.0f);            // camera'a up vector
+	
+	showTexture = glGetUniformLocation(shaderProgram, "IsTexture");
+	/*glBufferData(GL_ARRAY_BUFFER, sizeof(nVertices[9]) + sizeof(texCoords), NULL, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(nVertices[9]), point);
+	glBufferSubData(GL_ARRAY_BUFFER, sizeof(nVertices[9]), sizeof(texCoords), texCoords);*/
+	// glBufferSubData( GL_ARRAY_BUFFER, sizeof(point) + sizeof(texCoords), sizeof(normal), normal );
+
+	vTexCoord = glGetAttribLocation(shaderProgram, "vTexCoord");
+	glVertexAttribPointer(vTexCoord, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(nVertices[9])));
+	glEnableVertexAttribArray(vTexCoord);
+	// load texture
+	texture = loadRawTexture(texture, fileName, width, height);
+	if (texture != 0) {
+		printf("texture file, read, texture generated and bound  \n");
+		//  Texture = glGetUniformLocation(shaderProgram, "Texture"); 
+	}
+	else  // texture file loaded
+		printf("Texture in file %s NOT LOADED !!! \n");
 
 	camera[0] = new Camera(glm::vec3(0.0f, 10000.0f, 20000.0f), glm::vec3(0), glm::vec3(0.0f, 1.0f, 0.0f), 0, " View Front");
 	camera[1] = new Camera(glm::vec3(0.0f, 20000.0f, 0.0f), glm::vec3(0), glm::vec3(0.0f, 0.0f, -1.0f), 0, " View Top");
