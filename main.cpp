@@ -58,13 +58,13 @@ GLuint VAO[nModelsLoaded+1];      // Vertex Array Objects
 GLuint buffer[nModelsLoaded+1];   // Vertex Buffer Objects
 
 int width = 640, height = 480;    
-char * fileName[2] = { "rawFile2.raw", "rawFile4.raw"};
+char * fileName[2] = { "spaceboxFront.raw", "spaceboxRight.raw"};
 GLuint texture[2], Texture1, Texture2, Tex1, vTexCoord, showTexture;  // texture id
 GLuint VBO2, VAO2, ibo;
 int id = 0;
 glm::mat4 texModelFront = glm::mat4(1.0);
 glm::mat4 texModelRight = glm::mat4(1.0);
-glm::mat4 texScale = glm::scale(glm::mat4(1.0), glm::vec3(46188.0));
+glm::mat4 texScale = glm::scale(glm::mat4(1.0), glm::vec3(23100.0));
 //static const GLfloat point[] = {
 //	0.615, 0.435, 0, -0.615, -0.435, 0, -0.615, 0.435,0
 //	-0.615, -0.435, 0, 0.615, 0.435, 0, 0.615, -0.435,0 };
@@ -851,8 +851,8 @@ void init() {
 	//missileWarbird->setmissileScale(glm::vec3(20.0));
 	missileSiteUnum->setmissileScale(glm::vec3(20.0));
 	missileSiteSecundus->setmissileScale(glm::vec3(20.0));
-	texModelFront = glm::translate(texModelFront, glm::vec3(2500, 0, 0)) * texScale;
-	texModelRight = glm::translate(texModelRight, glm::vec3(25000, 0, 0)) *glm::rotate(identity, PI/2, glm::vec3(0,1,0))* texScale;
+	texModelFront = glm::translate(texModelFront, glm::vec3(0, 0, -23100)) * texScale;
+	texModelRight = glm::translate(texModelRight, glm::vec3(23100, 0, 0)) *glm::rotate(identity, PI/2, glm::vec3(0,1,0))* texScale;
 	//Set the positonal lighting
 
 	GLint light_Position_location = glGetUniformLocation(shaderProgram, "Light_Position");
