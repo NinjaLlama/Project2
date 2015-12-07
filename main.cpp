@@ -58,12 +58,16 @@ GLuint VAO[nModelsLoaded+1];      // Vertex Array Objects
 GLuint buffer[nModelsLoaded+1];   // Vertex Buffer Objects
 
 int width = 640, height = 480;    
-char * fileName[2] = { "spaceboxFront.raw", "spaceboxRight.raw"};
-GLuint texture[2], Texture1, Texture2, Tex1, vTexCoord, showTexture;  // texture id
+char * fileName[6] = { "spaceboxFront.raw", "spaceboxRight.raw", "spaceboxBack.raw", "spaceboxLeft.raw", "spaceboxDown.raw","spaceboxUp.raw" };
+GLuint texture[6], Texture1, Texture2, Texture3, Texture4, Texture5, Texture6, Tex1, Tex2, Tex3, Tex4, Tex5, vTexCoord, showTexture;  // texture id
 GLuint VBO2, VAO2, ibo;
 int id = 0;
 glm::mat4 texModelFront = glm::mat4(1.0);
 glm::mat4 texModelRight = glm::mat4(1.0);
+glm::mat4 texModelBack = glm::mat4(1.0);
+glm::mat4 texModelLeft = glm::mat4(1.0);
+glm::mat4 texModelDown = glm::mat4(1.0);
+glm::mat4 texModelUp = glm::mat4(1.0);
 glm::mat4 texScale = glm::scale(glm::mat4(1.0), glm::vec3(23100.0));
 //static const GLfloat point[] = {
 //	0.615, 0.435, 0, -0.615, -0.435, 0, -0.615, 0.435,0
@@ -379,8 +383,56 @@ void display() {
 	glActiveTexture(GL_TEXTURE0 + 1); // Texture unit 1
 	glBindTexture(GL_TEXTURE_2D, texture[1]);
 	glUniform1f(Tex1, 0);
+	glUniform1f(Tex2, 1);
 	ModelViewProjectionMatrix = projectionMatrix * viewMatrix * texModelRight;
 	glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(texModelRight));
+	glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
+	model_location = glGetUniformLocation(shaderProgram, "model");
+	glBindVertexArray(VAO[9]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glDrawElements(GL_TRIANGLES, 7, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+
+	glActiveTexture(GL_TEXTURE0 + 2); // Texture unit 2
+	glBindTexture(GL_TEXTURE_2D, texture[2]);
+	glUniform1f(Tex2, 0);
+	glUniform1f(Tex3, 1);
+	ModelViewProjectionMatrix = projectionMatrix * viewMatrix * texModelBack;
+	glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(texModelBack));
+	glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
+	model_location = glGetUniformLocation(shaderProgram, "model");
+	glBindVertexArray(VAO[9]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glDrawElements(GL_TRIANGLES, 7, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+
+	glActiveTexture(GL_TEXTURE0 + 3); // Texture unit 3
+	glBindTexture(GL_TEXTURE_2D, texture[3]);
+	glUniform1f(Tex3, 0);
+	glUniform1f(Tex4, 1);
+	ModelViewProjectionMatrix = projectionMatrix * viewMatrix * texModelLeft;
+	glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(texModelLeft));
+	glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
+	model_location = glGetUniformLocation(shaderProgram, "model");
+	glBindVertexArray(VAO[9]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glDrawElements(GL_TRIANGLES, 7, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+
+	glActiveTexture(GL_TEXTURE0 + 4); // Texture unit 4
+	glBindTexture(GL_TEXTURE_2D, texture[4]);
+	glUniform1f(Tex4, 0);
+	glUniform1f(Tex5, 1);
+	ModelViewProjectionMatrix = projectionMatrix * viewMatrix * texModelDown;
+	glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(texModelDown));
+	glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
+	model_location = glGetUniformLocation(shaderProgram, "model");
+	glBindVertexArray(VAO[9]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glDrawElements(GL_TRIANGLES, 7, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+
+	glActiveTexture(GL_TEXTURE0 + 5); // Texture unit 5
+	glBindTexture(GL_TEXTURE_2D, texture[5]);
+	glUniform1f(Tex5, 0);
+	ModelViewProjectionMatrix = projectionMatrix * viewMatrix * texModelUp;
+	glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(texModelUp));
 	glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
 	model_location = glGetUniformLocation(shaderProgram, "model");
 	glBindVertexArray(VAO[9]);
@@ -853,6 +905,10 @@ void init() {
 	missileSiteSecundus->setmissileScale(glm::vec3(20.0));
 	texModelFront = glm::translate(texModelFront, glm::vec3(0, 0, -23100)) * texScale;
 	texModelRight = glm::translate(texModelRight, glm::vec3(23100, 0, 0)) *glm::rotate(identity, PI/2, glm::vec3(0,1,0))* texScale;
+	texModelBack = glm::translate(texModelBack, glm::vec3(0, 0, 23100)) *glm::rotate(identity, PI , glm::vec3(0, 1, 0))* texScale;
+	texModelLeft = glm::translate(texModelLeft, glm::vec3(-23100, 0, 0)) *glm::rotate(identity, -PI / 2, glm::vec3(0, 1, 0))* texScale;
+	texModelDown = glm::translate(texModelDown, glm::vec3(0, -23100, 0)) *glm::rotate(identity, PI / 2, glm::vec3(1, 0, 0))* texScale;
+	texModelUp = glm::translate(texModelUp, glm::vec3(0, 23100, 0)) *glm::rotate(identity, PI / 2, glm::vec3(1, 0, 0))* texScale;
 	//Set the positonal lighting
 
 	GLint light_Position_location = glGetUniformLocation(shaderProgram, "Light_Position");
@@ -870,9 +926,21 @@ void init() {
 	showTexture = glGetUniformLocation(shaderProgram, "IsTexture");
 	Texture1 = glGetUniformLocation(shaderProgram, "Texture1");
 	Texture2 = glGetUniformLocation(shaderProgram, "Texture2");
+	Texture3 = glGetUniformLocation(shaderProgram, "Texture3");
+	Texture4 = glGetUniformLocation(shaderProgram, "Texture4");
+	Texture5 = glGetUniformLocation(shaderProgram, "Texture5");
+	Texture6 = glGetUniformLocation(shaderProgram, "Texture6");
 	glUniform1i(Texture1, 0);
 	glUniform1i(Texture2, 1);
+	glUniform1i(Texture3, 2);
+	glUniform1i(Texture4, 3);
+	glUniform1i(Texture5, 4);
+	glUniform1i(Texture6, 5);
 	Tex1 = glGetUniformLocation(shaderProgram, "Tex1");
+	Tex2 = glGetUniformLocation(shaderProgram, "Tex2");
+	Tex3 = glGetUniformLocation(shaderProgram, "Tex3");
+	Tex4 = glGetUniformLocation(shaderProgram, "Tex4");
+	Tex5 = glGetUniformLocation(shaderProgram, "Tex5");
 	// set up the indices buffer for indexed pyramid
 	glGenBuffers(1, &ibo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
@@ -901,7 +969,7 @@ void init() {
 	glVertexAttribPointer(vTexCoord, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(point)));
 	glEnableVertexAttribArray(vTexCoord);
 	// load texture
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < 6; i++)
 	{
 		texture[i] = loadRawTexture(texture[i], fileName[i], width, height);
 		if (texture != 0) {

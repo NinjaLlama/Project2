@@ -21,8 +21,16 @@ uniform vec4 color_diffuse=vec4(0.7,0.7,0.7,0.1);
 uniform vec3 light_position=vec3(0.0f,5000.0f,0.0f);
 uniform sampler2D Texture1;
 uniform sampler2D Texture2;
+uniform sampler2D Texture3;
+uniform sampler2D Texture4;
+uniform sampler2D Texture5;
+uniform sampler2D Texture6;
 uniform int id;
 uniform bool Tex1;
+uniform bool Tex2;
+uniform bool Tex3;
+uniform bool Tex4;
+uniform bool Tex5;
 uniform bool IsTexture;
 
 void main() {
@@ -35,8 +43,17 @@ if(IsTexture)
 {
 	if(Tex1)
 	fragColor = texture(Texture1, vs_texCoord); 
-	else
+	else if(Tex2)
 	fragColor = texture(Texture2, vs_texCoord);
+	else if(Tex3)
+	fragColor = texture(Texture4, vs_texCoord);
+	else if(Tex4)
+	fragColor = texture(Texture3, vs_texCoord);
+	else if(Tex5)
+	fragColor = texture(Texture5, vs_texCoord);
+	else
+	fragColor = texture(Texture6, vs_texCoord);
+	
 }
 else
   fragColor = ambient * (color_ambient + diffuse) *color;
