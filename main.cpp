@@ -58,9 +58,13 @@ GLuint VAO[nModelsLoaded+1];      // Vertex Array Objects
 GLuint buffer[nModelsLoaded+1];   // Vertex Buffer Objects
 
 int width = 640, height = 480;    
-char * fileName = "rawFile2.raw";   
-GLuint texture, Texture, vTexCoord, showTexture;  // texture id
+char * fileName[2] = { "rawFile2.raw", "rawFile4.raw"};
+GLuint texture[2], Texture1, Texture2, Tex1, vTexCoord, showTexture;  // texture id
 GLuint VBO2, VAO2, ibo;
+int id = 0;
+glm::mat4 texModelFront = glm::mat4(1.0);
+glm::mat4 texModelRight = glm::mat4(1.0);
+glm::mat4 texScale = glm::scale(glm::mat4(1.0), glm::vec3(46188.0));
 //static const GLfloat point[] = {
 //	0.615, 0.435, 0, -0.615, -0.435, 0, -0.615, 0.435,0
 //	-0.615, -0.435, 0, 0.615, 0.435, 0, 0.615, -0.435,0 };
@@ -76,10 +80,10 @@ GLuint VBO2, VAO2, ibo;
 // Set up vertex data (and buffer(s)) and attribute pointers
 static const GLfloat point[] = {
 	// Positions          // Colors           // Texture Coords
-	100.0f, 100.0f, 0.0f, 1.0f, // Top Right
-	100.0f, -100.0f, 0.0f, 1.0f,// Bottom Right
-	-100.0f, -100.0f, 0.0f, 1.0f,// Bottom Left
-	-100.0f, 100.0f, 0.0f, 1.0f  // Top Left 
+	1.0f, 1.0f, 0.0f, 1.0f, // Top Right
+	1.0f, -1.0f, 0.0f, 1.0f,// Bottom Right
+	-1.0f, -1.0f, 0.0f, 1.0f,// Bottom Left
+	-1.0f, 1.0f, 0.0f, 1.0f  // Top Left 
 };
 static const unsigned int indices[] = {  // Note that we start from 0!
 	0, 1, 3, // First Triangle
@@ -267,7 +271,6 @@ void display() {
 	modelMatrix[9] = missileSiteUnum->getModelMatrix();
 	modelMatrix[10] = missileSiteSecundus->getModelMatrix();
 	modelMatrix[11] = missileSiteSecundus->getModelMatrix();
-	modelMatrix[12] = plane->getModelMatrix();
 
 	//showMat4("duo", modelMatrix[2]);
 	for (int m = 0; m < nModels; m++) {
@@ -361,9 +364,29 @@ void display() {
 		
 	}
 	glUniform1f(showTexture, 1);
+
+	glActiveTexture(GL_TEXTURE0 + 0); // Texture unit 0
+	glBindTexture(GL_TEXTURE_2D, texture[0]);
+	glUniform1f(Tex1, 1);
+	ModelViewProjectionMatrix = projectionMatrix * viewMatrix * texModelFront;
+	glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(texModelFront));
+	glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
+	model_location = glGetUniformLocation(shaderProgram, "model");
 	glBindVertexArray(VAO[9]);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 	glDrawElements(GL_TRIANGLES, 7, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+
+	glActiveTexture(GL_TEXTURE0 + 1); // Texture unit 1
+	glBindTexture(GL_TEXTURE_2D, texture[1]);
+	glUniform1f(Tex1, 0);
+	ModelViewProjectionMatrix = projectionMatrix * viewMatrix * texModelRight;
+	glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(texModelRight));
+	glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
+	model_location = glGetUniformLocation(shaderProgram, "model");
+	glBindVertexArray(VAO[9]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glDrawElements(GL_TRIANGLES, 7, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+
 	glutSwapBuffers();
 	frameCount++;
 	// see if a second has passed to set estimated fps information
@@ -792,19 +815,7 @@ void init() {
 	shaderProgram = loadShaders(vertexShaderFile, fragmentShaderFile);
 	glUseProgram(shaderProgram);
 
-	/*char * modelFile[nModels] = { "Ruber.tri", "Unum.tri ", "Duo.tri", "Primus.tri",
-		"Segundus.tri", "BattleCruiser.tri", "missile.tri" };
-	float modelBR[nModels];       // model's bounding radius
-	float scaleValue[nModels];    // model's scaling "size" value
-	const int nVertices[nModels] = { 264 * 3, 264 * 3, 278 * 3, 264 * 3, 264 * 3, 2772 * 3, 644 * 3 };
-	float modelSize[nModels] = { 2000.0f, 200.0f, 400.0f, 100.0f, 150.0f, 100.0f, 25.0f };   // size of model
-glm::vec3 scale[nModels];       // set in init()
-glm::vec3 translate[nModels] = { glm::vec3(0, 0, 0), glm::vec3(4000, 0, 0), glm::vec3(9000, 0, 0),
-glm::vec3(900, 0, 0), glm::vec3(1750, 0, 0),
-glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 
-
-};*/
 
 	// generate VAOs and VBOs
 	glGenVertexArrays(nModelsLoaded+1, VAO);
@@ -836,13 +847,12 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	siteUnum = new Planet(glm::vec3(0, 200, 0), scale[8], 1382 * 3, 0.004f, 30.0f, "missileBase.tri");
 	siteSecundus = new Planet(glm::vec3(0, 150, 0), scale[8], 1382 * 3, 0.002f, 30.0f, "missileBase.tri");
 
-	plane = new Planet(glm::vec3(4000, 0, 0), scale[9], 2 * 3, 0.000f, 2000.0f, "plane.tri");
 
 	//missileWarbird->setmissileScale(glm::vec3(20.0));
 	missileSiteUnum->setmissileScale(glm::vec3(20.0));
 	missileSiteSecundus->setmissileScale(glm::vec3(20.0));
-
-
+	texModelFront = glm::translate(texModelFront, glm::vec3(2500, 0, 0)) * texScale;
+	texModelRight = glm::translate(texModelRight, glm::vec3(25000, 0, 0)) *glm::rotate(identity, PI/2, glm::vec3(0,1,0))* texScale;
 	//Set the positonal lighting
 
 	GLint light_Position_location = glGetUniformLocation(shaderProgram, "Light_Position");
@@ -858,6 +868,11 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	//up = glm::vec3(0.0f, 1.0f, 0.0f);            // camera'a up vector
 	
 	showTexture = glGetUniformLocation(shaderProgram, "IsTexture");
+	Texture1 = glGetUniformLocation(shaderProgram, "Texture1");
+	Texture2 = glGetUniformLocation(shaderProgram, "Texture2");
+	glUniform1i(Texture1, 0);
+	glUniform1i(Texture2, 1);
+	Tex1 = glGetUniformLocation(shaderProgram, "Tex1");
 	// set up the indices buffer for indexed pyramid
 	glGenBuffers(1, &ibo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
@@ -886,14 +901,16 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	glVertexAttribPointer(vTexCoord, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(point)));
 	glEnableVertexAttribArray(vTexCoord);
 	// load texture
-	texture = loadRawTexture(texture, fileName, width, height);
-	if (texture != 0) {
-		printf("texture file, read, texture generated and bound  \n");
-		//  Texture = glGetUniformLocation(shaderProgram, "Texture"); 
+	for (int i = 0; i < 2; i++)
+	{
+		texture[i] = loadRawTexture(texture[i], fileName[i], width, height);
+		if (texture != 0) {
+			printf("texture file, read, texture generated and bound  \n");
+			//Texture[i] = glGetUniformLocation(shaderProgram, "Texture"); 
+		}
+		else  // texture file loaded
+			printf("Texture in file %s NOT LOADED !!! \n");
 	}
-	else  // texture file loaded
-		printf("Texture in file %s NOT LOADED !!! \n");
-
 
 	camera[0] = new Camera(glm::vec3(0.0f, 10000.0f, 20000.0f), glm::vec3(0), glm::vec3(0.0f, 1.0f, 0.0f), 0, " View Front");
 	camera[1] = new Camera(glm::vec3(0.0f, 20000.0f, 0.0f), glm::vec3(0), glm::vec3(0.0f, 0.0f, -1.0f), 0, " View Top");

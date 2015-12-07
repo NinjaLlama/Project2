@@ -19,7 +19,10 @@ in vec2 vs_texCoord;
 uniform vec4 color_ambient=vec4(0.1,0.1,0.1,1.0);
 uniform vec4 color_diffuse=vec4(0.7,0.7,0.7,0.1);
 uniform vec3 light_position=vec3(0.0f,5000.0f,0.0f);
-uniform sampler2D Texture;
+uniform sampler2D Texture1;
+uniform sampler2D Texture2;
+uniform int id;
+uniform bool Tex1;
 uniform bool IsTexture;
 
 void main() {
@@ -29,7 +32,12 @@ vec3 light_direction=normalize(light_position - vs_worldpos);
 vec3 normal=normalize(vs_normal);
 float diffuse=max(0.0,dot(normal,light_direction));
 if(IsTexture)
-	fragColor = texture(Texture, vs_texCoord); 
+{
+	if(Tex1)
+	fragColor = texture(Texture1, vs_texCoord); 
+	else
+	fragColor = texture(Texture2, vs_texCoord);
+}
 else
   fragColor = ambient * (color_ambient + diffuse) *color;
   
