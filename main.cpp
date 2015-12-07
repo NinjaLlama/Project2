@@ -42,37 +42,54 @@ and make sure 'Single Startup Project' is selected ***
 
 const int X = 0, Y = 1, Z = 2, W = 3, START = 0, STOP = 1;
 // constants for models:  file names, vertex count, model display size
-const int nModelsLoaded = 10;  // number of model files
-const int nModels = 13;  // number of models in this scene (two missile sites and up to three active missiles)
+const int nModelsLoaded = 9;  // number of model files
+const int nModels = 12;  // number of models in this scene (two missile sites and up to three active missiles)
 const int nCameras = 5;
 const int nCollisions = 9;
 char * modelFile[nModelsLoaded] = { "Ruber.tri", "Unum.tri ", "Duo.tri", "Primus.tri",
-"Segundus.tri", "BattleCruiser.tri", "missile.tri", "axes-r100.tri", "missileBase.tri", "plane.tri" };
+"Segundus.tri", "BattleCruiser.tri", "missile.tri", "axes-r100.tri", "missileBase.tri" };//, "plane.tri" };
 float modelBR[nModelsLoaded];       // model's bounding radius
 float scaleValue[nModelsLoaded];    // model's scaling "size" value
-const int nVertices[nModelsLoaded] = { 264 * 3, 264 * 3, 278 * 3, 264 * 3, 264 * 3, 2772 * 3, 644 * 3, 120 * 3, 1382 * 3, 2*3 };
+const int nVertices[nModelsLoaded] = { 264 * 3, 264 * 3, 278 * 3, 264 * 3, 264 * 3, 2772 * 3, 644 * 3, 120 * 3, 1382 * 3 };//, 2*3 };
 char * vertexShaderFile = "simpleVertex.glsl";
 char * fragmentShaderFile = "simpleFragment.glsl";
 GLuint shaderProgram;
-GLuint VAO[nModelsLoaded];      // Vertex Array Objects
-GLuint buffer[nModelsLoaded];   // Vertex Buffer Objects
+GLuint VAO[nModelsLoaded+1];      // Vertex Array Objects
+GLuint buffer[nModelsLoaded+1];   // Vertex Buffer Objects
 
 int width = 640, height = 480;    
 char * fileName = "rawFile2.raw";   
 GLuint texture, Texture, vTexCoord, showTexture;  // texture id
-
+GLuint VBO2, VAO2, ibo;
+//static const GLfloat point[] = {
+//	0.615, 0.435, 0, -0.615, -0.435, 0, -0.615, 0.435,0
+//	-0.615, -0.435, 0, 0.615, 0.435, 0, 0.615, -0.435,0 };
+//
+//// Texture Coordinates for each vertex
+//// points * 2 (s, t)
+//static const GLfloat texCoords[] = {
+//	0.0f, 0.0f,     // 0
+//	1.0f, 0.0f,     // 1
+//	1.0f, 1.0f,     // 2
+//	0.0f, 1.0f     // 3
+//};   
+// Set up vertex data (and buffer(s)) and attribute pointers
 static const GLfloat point[] = {
-	0.615, 0.435, 0, -0.615, -0.435, 0, -0.615, 0.435,0
-	-0.615, -0.435, 0, 0.615, 0.435, 0, 0.615, -0.435,0 };
-
-// Texture Coordinates for each vertex
-// points * 2 (s, t)
+	// Positions          // Colors           // Texture Coords
+	100.0f, 100.0f, 0.0f, 1.0f, // Top Right
+	100.0f, -100.0f, 0.0f, 1.0f,// Bottom Right
+	-100.0f, -100.0f, 0.0f, 1.0f,// Bottom Left
+	-100.0f, 100.0f, 0.0f, 1.0f  // Top Left 
+};
+static const unsigned int indices[] = {  // Note that we start from 0!
+	0, 1, 3, // First Triangle
+	1, 2, 3  // Second Triangle
+};
 static const GLfloat texCoords[] = {
-	0.0f, 0.0f,     // 0
+	1.0f, 1.0f,     // 0
 	1.0f, 0.0f,     // 1
-	1.0f, 1.0f,     // 2
-	0.0f, 1.0f     // 3
-};   
+	0.0f, 0.0f,     // 2
+	0.0f, 1.0f };
 
 //// vectors and values for lookAt
 //glm::vec3 eye, at, up;
@@ -144,7 +161,7 @@ GLuint MVP, model_location; // Model View Projection matrix's handle
 GLuint vPosition[nModelsLoaded], vColor[nModelsLoaded], vNormal[nModelsLoaded];   // vPosition, vColor, vNormal handles for models
 // model, view, projection matrices and values to create modelMatrix.
 //loaded in order of Ruber, Umun, Duo, Primus, Secundus, Warbird, missiles
-float modelSize[nModelsLoaded] = { 2000.0f, 200.0f, 400.0f, 100.0f, 150.0f, 150.0f, 25.0f, 150.0f, 30.0f, 2000.0f };   // size of model
+float modelSize[nModelsLoaded] = { 2000.0f, 200.0f, 400.0f, 100.0f, 150.0f, 150.0f, 25.0f, 150.0f, 30.0f };//, 5000.0f };   // size of model
 glm::vec3 scale[nModelsLoaded];       // set in init()
 glm::vec3 translate[nModelsLoaded] = { glm::vec3(0, 0, 0), glm::vec3(4000, 0, 0), glm::vec3(9000, 0, 0),
 glm::vec3(900, 0, 0), glm::vec3(1750, 0, 0),
@@ -311,17 +328,17 @@ void display() {
 			glBindVertexArray(VAO[8]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[8]);
 		}
-		else if (m == 8 ) //site Unum missile
+		else if (m == 8 ) //site warbird missile
 		{
 			glBindVertexArray(VAO[6]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[6]);
 		}
-		else if (m == 9 ) //site Secundus missile
+		else if (m == 9 ) //site Unum missile
 		{
 			glBindVertexArray(VAO[6]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[6]);
 		}
-		else if (m == 10 ) //warbird missile
+		else if (m == 10 ) //Secundus missile
 		{
 			glBindVertexArray(VAO[6]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[6]);
@@ -331,18 +348,22 @@ void display() {
 			glBindVertexArray(VAO[7]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[7]);
 		}
-		else if (m == 12)
+		/*else if (m == 12)
 		{
 			glUniform1f(showTexture, 1);
 			glBindVertexArray(VAO[9]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[9]);
-		}
+		}*/
 		else
 		{
 			//do nothing
 		}
-
+		
 	}
+	glUniform1f(showTexture, 1);
+	glBindVertexArray(VAO[9]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glDrawElements(GL_TRIANGLES, 7, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
 	glutSwapBuffers();
 	frameCount++;
 	// see if a second has passed to set estimated fps information
@@ -786,8 +807,8 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 };*/
 
 	// generate VAOs and VBOs
-	glGenVertexArrays(nModelsLoaded, VAO);
-	glGenBuffers(nModelsLoaded, buffer);
+	glGenVertexArrays(nModelsLoaded+1, VAO);
+	glGenBuffers(nModelsLoaded+1, buffer);
 	// load the buffers from the model files
 	for (int i = 0; i < nModelsLoaded; i++) {
 		modelBR[i] = loadModelBuffer(modelFile[i], nVertices[i], VAO[i], buffer[i], shaderProgram,
@@ -837,13 +858,32 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	//up = glm::vec3(0.0f, 1.0f, 0.0f);            // camera'a up vector
 	
 	showTexture = glGetUniformLocation(shaderProgram, "IsTexture");
-	/*glBufferData(GL_ARRAY_BUFFER, sizeof(nVertices[9]) + sizeof(texCoords), NULL, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(nVertices[9]), point);
-	glBufferSubData(GL_ARRAY_BUFFER, sizeof(nVertices[9]), sizeof(texCoords), texCoords);*/
-	// glBufferSubData( GL_ARRAY_BUFFER, sizeof(point) + sizeof(texCoords), sizeof(normal), normal );
+	// set up the indices buffer for indexed pyramid
+	glGenBuffers(1, &ibo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
+	// set up the indexed pyramid vertex attributes
+	glBindVertexArray(VAO[9]);
+
+	//  initialize a buffer object
+	glEnableVertexAttribArray(buffer[9]);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer[9]);
+	//glBufferData( GL_ARRAY_BUFFER, sizeof(point) + sizeof(texCoords) + sizeof(normal), NULL, GL_STATIC_DRAW );
+	glBufferData(GL_ARRAY_BUFFER, sizeof(point) + sizeof(texCoords), NULL, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(point), point);
+	glBufferSubData(GL_ARRAY_BUFFER, sizeof(point), sizeof(texCoords), texCoords);
+	// glBufferSubData( GL_ARRAY_BUFFER, sizeof(point) + sizeof(texCoords), sizeof(normal), normal );
+	// Position attribute
+
+
+	// set up vertex arrays (after shaders are loaded)
+	vPosition[9] = glGetAttribLocation(shaderProgram, "vPosition");
+	glVertexAttribPointer(vPosition[9], 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+	glEnableVertexAttribArray(vPosition[9]);
+	
 	vTexCoord = glGetAttribLocation(shaderProgram, "vTexCoord");
-	glVertexAttribPointer(vTexCoord, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(nVertices[9])));
+	glVertexAttribPointer(vTexCoord, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(point)));
 	glEnableVertexAttribArray(vTexCoord);
 	// load texture
 	texture = loadRawTexture(texture, fileName, width, height);
@@ -853,6 +893,7 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	}
 	else  // texture file loaded
 		printf("Texture in file %s NOT LOADED !!! \n");
+
 
 	camera[0] = new Camera(glm::vec3(0.0f, 10000.0f, 20000.0f), glm::vec3(0), glm::vec3(0.0f, 1.0f, 0.0f), 0, " View Front");
 	camera[1] = new Camera(glm::vec3(0.0f, 20000.0f, 0.0f), glm::vec3(0), glm::vec3(0.0f, 0.0f, -1.0f), 0, " View Top");
