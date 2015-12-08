@@ -56,6 +56,11 @@ GLuint shaderProgram;
 GLuint VAO[nModelsLoaded];      // Vertex Array Objects
 GLuint buffer[nModelsLoaded];   // Vertex Buffer Objects
 
+
+GLuint HeadLightPosition, HeadLightIntensity, PointLightPosition, PointLightIntensity;
+GLboolean HeadLightOn, PointLightOn;
+GLboolean DebugOn;
+
 //// vectors and values for lookAt
 //glm::vec3 eye, at, up;
 
@@ -122,7 +127,7 @@ int updateCount = 0;  // for update rate
 double currentUpdateTime, lastUpdateTime, timeIntervalUpdate;
 
 // Shader handles, matrices, etc
-GLuint MVP, model_location; // Model View Projection matrix's handle
+GLuint MVP, ModelView; // Model View Projection matrix's handle
 GLuint vPosition[nModelsLoaded], vColor[nModelsLoaded], vNormal[nModelsLoaded];   // vPosition, vColor, vNormal handles for models
 // model, view, projection matrices and values to create modelMatrix.
 //loaded in order of Ruber, Umun, Duo, Primus, Secundus, Warbird, missiles
@@ -286,11 +291,16 @@ void display() {
 			viewMatrix = camera[4]->getViewMatrix();
 		}
 
+		glm::mat4 modelView; 
+		modelView = viewMatrix * modelMatrix[m];
+		
+	
 		// glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr( modelMatrix)); 
 		ModelViewProjectionMatrix = projectionMatrix * viewMatrix * modelMatrix[m];
-		glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(modelMatrix[m]));
 		glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
-        model_location=glGetUniformLocation(shaderProgram,"model");
+		glUniformMatrix4fv(ModelView, 1, GL_FALSE, glm::value_ptr(modelView));
+		
+		
 		if (m < 6)
 		{
 			glBindVertexArray(VAO[m]);
@@ -495,7 +505,7 @@ void update(void){
 			missileSiteSecundus->destroymissile = true;
 		}
 	}
-
+	
 	updateCount++;
 	// see if a second has passed to set estimated fps information
 	currentUpdateTime = glutGet(GLUT_ELAPSED_TIME);  // get elapsed system time
@@ -509,6 +519,7 @@ void update(void){
 	glutPostRedisplay();
 
 }
+
 
 
 // Estimate FPS, use for fixed interval timer driven animation
@@ -753,8 +764,14 @@ void specialKeyEvent(int key, int x, int y) {
 // load the shader programs, vertex data from model files, create the solids, set initial view
 void init() {
 	// load the shader programs
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_POLYGON_SMOOTH);
+
 	shaderProgram = loadShaders(vertexShaderFile, fragmentShaderFile);
 	glUseProgram(shaderProgram);
+
+	
 
 	/*char * modelFile[nModels] = { "Ruber.tri", "Unum.tri ", "Duo.tri", "Primus.tri",
 		"Segundus.tri", "BattleCruiser.tri", "missile.tri" };
@@ -805,14 +822,8 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	missileSiteSecundus->setmissileScale(glm::vec3(20.0));
 
 
-	//Set the positonal lighting
+	
 
-	GLint light_Position_location = glGetUniformLocation(shaderProgram, "Light_Position");
-	glm::vec3 light_position = glm::vec3(0.0f, 5000.0f, 0.0f);
-	glUniform3f(light_Position_location, light_position.x, light_position.y, light_position.z);
-
-	MVP = glGetUniformLocation(shaderProgram, "ModelViewProjection");
-	model_location = glGetUniformLocation(shaderProgram, "Model_Location");
 
 	//// initially use a front view
 	//eye = glm::vec3(0.0f, 10000.0f, 20000.0f);   // camera's position
@@ -829,11 +840,37 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850)
 	showMat4("front view: ", viewMatrix);
 	toggleCam++;
 
-	// set render state values
-	glEnable(GL_DEPTH_TEST);
+	
 	glClearColor(0.7f, 0.7f, 0.7f, 0.7f);
 
 	lastTime = glutGet(GLUT_ELAPSED_TIME);  // get elapsed system time
+
+
+	//Loads the model view and mvp
+
+	ModelView= glGetUniformLocation(shaderProgram, "ModelView");
+	MVP = glGetUniformLocation(shaderProgram, "ModelViewProjection");
+
+	//loads the point light position light on and intensity uniform locations
+	 PointLightPosition = glGetUniformLocation(shaderProgram, "PointLightPosition");
+	PointLightOn = glGetUniformLocation(shaderProgram, "PointLightOn");
+	 PointLightIntensity = glGetUniformLocation(shaderProgram, "PointLightIntensity");
+
+
+	 DebugOn = glGetUniformLocation(shaderProgram, "DebugOn");
+	 
+
+		 //loads all the headlight uniform locations
+	 HeadLightPosition = glGetUniformLocation(shaderProgram, "HeadLightPosition");
+	 HeadLightOn = glGetUniformLocation(shaderProgram, "HeadLightOn");
+	 HeadLightIntensity = glGetUniformLocation(shaderProgram, "HeadLightIntensity");
+
+	glUniform3f(PointLightPosition, 0.0f,0.0f,0.0f);
+	glUniform1f(PointLightOn, true);
+	glUniform3f(PointLightIntensity, 0.3f, 0.2f, 0.1f);
+	glUniform1f(DebugOn, false);
+	glUniform1f(HeadLightOn, true);
+	glUniform3f(HeadLightIntensity, 0.2f, 0.3f, 0.4f);
 }
 
 int main(int argc, char* argv[]) {
@@ -854,6 +891,7 @@ int main(int argc, char* argv[]) {
 			glGetString(GL_VERSION),
 			glGetString(GL_SHADING_LANGUAGE_VERSION));
 	}
+
 	// initialize scene
 	init();
 	// set glut callback functions

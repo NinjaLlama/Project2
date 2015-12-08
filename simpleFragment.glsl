@@ -10,25 +10,75 @@ Mike Barnes
 # version 330 core
 
 in vec4 color;
-out vec4 fragColor;
-in vec3 vs_worldpos;
-in vec3 vs_normal;
+in vec3 fNormal;
+in vec3 fPosition;
 
-//define light properties
-uniform vec4 color_ambient=vec4(0.1,0.1,0.1,1.0);
-uniform vec4 color_diffuse=vec4(0.7,0.7,0.7,0.1);
-uniform vec3 light_position=vec3(0.0f,5000.0f,0.0f);
+
+uniform vec3 HeadLightPosition;
+uniform vec3 HeadLightIntensity;
+uniform vec3 PointLightPosition;
+uniform vec3 PointLightIntensity;
+
+uniform bool HeadLightOn; // toggles set in application
+uniform bool PointLightOn;
+uniform bool DebugOn; 
+vec3 ambientColor  = vec3(1.0, 0.0, 0.0); //red ambient 
+vec3 diffuseColor  = vec3(0.0, 1.0, 0.0); // green diffuse
+out vec4 fragColor;
+
+vec3 vLight(vec3 LightPosition, vec3 LightIntensity, bool directional) {
+    float ambient = 0.5f;
+    // scale directional ambient
+	float diffuse = 0.0f;
+    // compute diffuse in all cases
+	vec3 n, s;
+    // normal, light source
+	if (directional)
+	{ 
+		s = normalize(LightPosition); 
+	}
+    else {
+    // point light has no ambient
+		s = normalize(LightPosition - fPosition);
+		ambient = 0.0f;
+
+	}
+
+
+	
+
+	n = normalize(fNormal);
+    diffuse = max(dot(s, n), 0.0);
+
+	if (DebugOn)
+	 return ambient * ambientColor + diffuse * diffuseColor; 
+	 else 
+	 return ambient * LightIntensity + diffuse * LightIntensity;
+
+    // reflected light
+	return ambient * LightIntensity + diffuse * LightIntensity;
+
+
+
+
+	 
+}
+
 
 
 void main() {
+	vec3 tempColor = vec3(color) * 0.1f;
+	//initial value
+	if (HeadLightOn){
+		tempColor += vLight(HeadLightPosition,HeadLightIntensity, true);
+	}
+	if (PointLightOn) 
+	{
+		tempColor += vLight(PointLightPosition, PointLightIntensity, false);
+	}
+	
+	fragColor = vec4(tempColor, 1.0);
+}
 
-float ambient=10.0f;//scale the ambient light
-vec3 light_direction=normalize(light_position - vs_worldpos);
-vec3 normal=normalize(vs_normal);
-float diffuse=max(0.0,dot(normal,light_direction));
-  fragColor = ambient * (color_ambient + diffuse) *color;
-  
 
 
-
-  }
