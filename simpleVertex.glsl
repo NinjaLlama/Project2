@@ -10,18 +10,22 @@ Mike Barnes
 
 # version 330 core
 
-layout (location = 0) in vec4 vPosition;
-layout (location = 1) in vec4 vColor;
-layout (location = 2) in vec3 vNormal;  // not used
-layout (location = 3)in vec2 vTexCoord;
+in vec4 vPosition;
+in vec4 vColor;
+in vec3 vNormal;
+in vec2 vTexCoord;
 
 uniform mat4 ModelViewProjection;  // = projection * view * model
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
 uniform mat3 NormalMatrix;
+uniform mat4 ModelView;
 uniform bool IsTexture;
 
 out vec4 color;
-out vec3 vs_worldpos;
-out vec3 vs_normal;
+out vec3 fPosition;
+out vec3 fNormal;
 out vec2 vs_texCoord;
 
 void main() {
@@ -35,10 +39,9 @@ void main() {
   vs_texCoord = vec2(0,0);
   color = vColor;
   }
-  vec4 position =ModelViewProjection * vPosition;
-  gl_Position = position;
-  vs_worldpos=position.xyz;
- vs_normal = NormalMatrix * vNormal;
+  gl_Position = ModelViewProjection * vPosition;
+  fPosition =  (ModelView * vPosition).xyz;
+fNormal =   vNormal;
   }
   
  

@@ -61,6 +61,9 @@ int width = 640, height = 480;
 char * fileName[6] = { "spaceboxFront.raw", "spaceboxRight.raw", "spaceboxBack.raw", "spaceboxLeft.raw", "spaceboxDown.raw","spaceboxUp.raw" };
 GLuint texture[6], Texture1, Texture2, Texture3, Texture4, Texture5, Texture6, Tex1, Tex2, Tex3, Tex4, Tex5, vTexCoord, showTexture;  // texture id
 GLuint VBO2, VAO2, ibo;
+GLuint HeadLightPosition, HeadLightIntensity, PointLightPosition, PointLightIntensity;
+GLboolean HeadLightOn, PointLightOn;
+GLboolean DebugOn;
 int id = 0;
 glm::mat4 texModelFront = glm::mat4(1.0);
 glm::mat4 texModelRight = glm::mat4(1.0);
@@ -165,7 +168,7 @@ int updateCount = 0;  // for update rate
 double currentUpdateTime, lastUpdateTime, timeIntervalUpdate;
 
 // Shader handles, matrices, etc
-GLuint MVP, model_location; // Model View Projection matrix's handle
+GLuint MVP, model_location, ModelView; // Model View Projection matrix's handle
 GLuint vPosition[nModelsLoaded], vColor[nModelsLoaded], vNormal[nModelsLoaded];   // vPosition, vColor, vNormal handles for models
 // model, view, projection matrices and values to create modelMatrix.
 //loaded in order of Ruber, Umun, Duo, Primus, Secundus, Warbird, missiles
@@ -319,11 +322,14 @@ void display() {
 			camera[4]->up = glm::vec3(0.0f, 1.0f, 0.0f);                 // camera's up is Y
 			viewMatrix = camera[4]->getViewMatrix();
 		}
-		
+		glm::mat4 modelView;
+		modelView = viewMatrix * modelMatrix[m];
+
+
 		// glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr( modelMatrix)); 
 		ModelViewProjectionMatrix = projectionMatrix * viewMatrix * modelMatrix[m];
-		glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(modelMatrix[m]));
 		glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
+		glUniformMatrix4fv(ModelView, 1, GL_FALSE, glm::value_ptr(modelView));
         model_location=glGetUniformLocation(shaderProgram,"model");
 		if (m < 6)
 		{
@@ -917,7 +923,30 @@ void init() {
 
 	MVP = glGetUniformLocation(shaderProgram, "ModelViewProjection");
 	model_location = glGetUniformLocation(shaderProgram, "Model_Location");
+	//Loads the model view and mvp
 
+	ModelView = glGetUniformLocation(shaderProgram, "ModelView");
+
+	//loads the point light position light on and intensity uniform locations
+	PointLightPosition = glGetUniformLocation(shaderProgram, "PointLightPosition");
+	PointLightOn = glGetUniformLocation(shaderProgram, "PointLightOn");
+	PointLightIntensity = glGetUniformLocation(shaderProgram, "PointLightIntensity");
+
+
+	DebugOn = glGetUniformLocation(shaderProgram, "DebugOn");
+
+
+	//loads all the headlight uniform locations
+	HeadLightPosition = glGetUniformLocation(shaderProgram, "HeadLightPosition");
+	HeadLightOn = glGetUniformLocation(shaderProgram, "HeadLightOn");
+	HeadLightIntensity = glGetUniformLocation(shaderProgram, "HeadLightIntensity");
+
+	glUniform3f(PointLightPosition, 0.0f, 0.0f, 0.0f);
+	glUniform1f(PointLightOn, true);
+	glUniform3f(PointLightIntensity, 0.5f, 0.5f, 0.5f);
+	glUniform1f(DebugOn, false);
+	glUniform1f(HeadLightOn, true);
+	glUniform3f(HeadLightIntensity, 0.2f, 0.3f, 0.4f);
 	//// initially use a front view
 	//eye = glm::vec3(0.0f, 10000.0f, 20000.0f);   // camera's position
 	//at = glm::vec3(0);						   // position camera is looking at
