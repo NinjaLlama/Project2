@@ -904,11 +904,11 @@ void init() {
 	missileSiteUnum->setmissileScale(glm::vec3(20.0));
 	missileSiteSecundus->setmissileScale(glm::vec3(20.0));
 	texModelFront = glm::translate(texModelFront, glm::vec3(0, 0, -23100)) * texScale;
-	texModelRight = glm::translate(texModelRight, glm::vec3(23100, 0, 0)) *glm::rotate(identity, PI/2, glm::vec3(0,1,0))* texScale;
-	texModelBack = glm::translate(texModelBack, glm::vec3(0, 0, 23100)) *glm::rotate(identity, PI , glm::vec3(0, 1, 0))* texScale;
-	texModelLeft = glm::translate(texModelLeft, glm::vec3(-23100, 0, 0)) *glm::rotate(identity, -PI / 2, glm::vec3(0, 1, 0))* texScale;
+	texModelRight = glm::translate(texModelRight, glm::vec3(23100, 0, 0)) *glm::rotate(identity, -PI/2, glm::vec3(0,1,0))* texScale;
+	texModelLeft = glm::translate(texModelLeft, glm::vec3(0, 0, 23100)) *glm::rotate(identity, PI , glm::vec3(0, 1, 0))* texScale;
+	texModelBack = glm::translate(texModelBack, glm::vec3(-23100, 0, 0)) *glm::rotate(identity, PI / 2, glm::vec3(0, 1, 0))* texScale;
 	texModelDown = glm::translate(texModelDown, glm::vec3(0, -23100, 0)) *glm::rotate(identity, PI / 2, glm::vec3(1, 0, 0))* texScale;
-	texModelUp = glm::translate(texModelUp, glm::vec3(0, 23100, 0)) *glm::rotate(identity, PI / 2, glm::vec3(1, 0, 0))* texScale;
+	texModelUp = glm::translate(texModelUp, glm::vec3(0, 23100, 0)) *glm::rotate(identity, -PI / 2, glm::vec3(1, 0, 0))* texScale;
 	//Set the positonal lighting
 
 	GLint light_Position_location = glGetUniformLocation(shaderProgram, "Light_Position");
