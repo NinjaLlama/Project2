@@ -56,12 +56,15 @@ char * fragmentShaderFile = "simpleFragment.glsl";
 GLuint shaderProgram;
 GLuint VAO[nModelsLoaded+1];      // Vertex Array Objects
 GLuint buffer[nModelsLoaded+1];   // Vertex Buffer Objects
+bool headlight = true;
+bool ambientlight = true;
+bool pointlight = true;
 
 int width = 640, height = 480;    
 char * fileName[6] = { "spaceboxFront.raw", "spaceboxRight.raw", "spaceboxBack.raw", "spaceboxLeft.raw", "spaceboxDown.raw","spaceboxUp.raw" };
 GLuint texture[6], Texture1, Texture2, Texture3, Texture4, Texture5, Texture6, Tex1, Tex2, Tex3, Tex4, Tex5, vTexCoord, showTexture;  // texture id
 GLuint VBO2, VAO2, ibo;
-GLuint HeadLightPosition, HeadLightIntensity, PointLightPosition, PointLightIntensity;
+GLuint HeadLightPosition, HeadLightIntensity, PointLightPosition, PointLightIntensity, NormalMatrix;
 GLboolean HeadLightOn, PointLightOn;
 GLboolean DebugOn;
 int id = 0;
@@ -168,7 +171,7 @@ int updateCount = 0;  // for update rate
 double currentUpdateTime, lastUpdateTime, timeIntervalUpdate;
 
 // Shader handles, matrices, etc
-GLuint MVP, model_location, ModelView; // Model View Projection matrix's handle
+GLuint MVP, model_location, ModelView, AmbientLightOn; // Model View Projection matrix's handle
 GLuint vPosition[nModelsLoaded], vColor[nModelsLoaded], vNormal[nModelsLoaded];   // vPosition, vColor, vNormal handles for models
 // model, view, projection matrices and values to create modelMatrix.
 //loaded in order of Ruber, Umun, Duo, Primus, Secundus, Warbird, missiles
@@ -278,13 +281,19 @@ void display() {
 	modelMatrix[9] = missileSiteUnum->getModelMatrix();
 	modelMatrix[10] = missileSiteSecundus->getModelMatrix();
 	modelMatrix[11] = missileSiteSecundus->getModelMatrix();
-
+	
 	//showMat4("duo", modelMatrix[2]);
 	for (int m = 0; m < nModels; m++) {
 		//dynamic cameras
 		//warbird camera
-
-		
+		if (cycleForward && toggleCam == 1 || cycleBackward && toggleCam == 0)//front head light
+		{
+			glUniform3fv(HeadLightPosition, 1, glm::value_ptr(glm::vec3(camera[0]->getViewMatrix()[2])));
+		}
+		if (cycleForward && toggleCam == 2 || cycleBackward && toggleCam == 1)//top head light
+		{
+			glUniform3fv(HeadLightPosition, 1, glm::value_ptr(glm::vec3(-camera[1]->getViewMatrix()[2])));
+		}
 		if (cycleForward && toggleCam == 3 || cycleBackward && toggleCam == 2)
 		{
 			//(glm::vec3(5000.0f, 1300.0f, 6000.0f), glm::vec3(5000.0f, 1000.0f, 5000.0f), glm::vec3(0.0f, 1.0f, 0.0f)
@@ -296,6 +305,7 @@ void display() {
 			camera[2]->at = glm::vec3(modelMatrix[5][3]) + upWarbird * 300.0f;
 			camera[2]->up = upWarbird;
 			viewMatrix = camera[2]->getViewMatrix();
+			glUniform3fv(HeadLightPosition, 1, glm::value_ptr(glm::vec3(modelMatrix[5][2])));
 		}
 		//Unum camera
 		if (cycleForward && toggleCam == 4 || cycleBackward && toggleCam == 3)
@@ -307,6 +317,7 @@ void display() {
 			camera[3]->at = glm::vec3(unum->getModelMatrix()[3]);							// camera is looking at Unum
 			camera[3]->up = glm::vec3(0.0f, 1.0f, 0.0f);             // camera's up is Y
 			viewMatrix = camera[3]->getViewMatrix();
+			glUniform3fv(HeadLightPosition, 1, glm::value_ptr(glm::vec3(-modelMatrix[1][2])));
 		}
 		//Duo camera
 		if (cycleForward && toggleCam == 5 || cycleBackward && toggleCam == 4)
@@ -321,15 +332,18 @@ void display() {
 			camera[4]->at = glm::vec3(duo->getModelMatrix()[3]);								// camera is looking at Duo
 			camera[4]->up = glm::vec3(0.0f, 1.0f, 0.0f);                 // camera's up is Y
 			viewMatrix = camera[4]->getViewMatrix();
+			glUniform3fv(HeadLightPosition, 1, glm::value_ptr(glm::vec3(-modelMatrix[2][2])));
 		}
 		glm::mat4 modelView;
-		modelView = viewMatrix * modelMatrix[m];
-
+		modelView = modelMatrix[m];
+		glm::mat3 normalMatrix =
+			glm::mat3(modelMatrix[m]);
 
 		// glUniformMatrix4fv(model, 1, GL_FALSE, glm::value_ptr( modelMatrix)); 
 		ModelViewProjectionMatrix = projectionMatrix * viewMatrix * modelMatrix[m];
 		glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
 		glUniformMatrix4fv(ModelView, 1, GL_FALSE, glm::value_ptr(modelView));
+		glUniformMatrix3fv(NormalMatrix, 1, GL_FALSE, glm::value_ptr(normalMatrix));
         model_location=glGetUniformLocation(shaderProgram,"model");
 		if (m < 6)
 		{
@@ -656,6 +670,8 @@ void keyboard(unsigned char key, int x, int y) {
 		break;
 
 	case 'v': case 'V': //toggle camera
+		/*if (toggleCam != 3)
+			glUniform3fv(HeadLightPosition, 1, glm::value_ptr(glm::vec3(camera[toggleCam]->getViewMatrix()[2])));*/
 		if (cycleForward)
 		{
 			if (toggleCam == nCameras)
@@ -677,7 +693,7 @@ void keyboard(unsigned char key, int x, int y) {
 			cycleForward = true;
 			cycleBackward = false;
 		}
-
+		
 		break;
 
 	case 'x': case 'X': //toggle previous camera
@@ -794,15 +810,65 @@ void keyboard(unsigned char key, int x, int y) {
 		
 		break;
 
+	case 'h':case 'H':
+		if (!headlight)
+		{
+			headlight = true;
+			glUniform1f(HeadLightOn, true);
+
+		}
+		else
+		{
+			headlight = false;
+			glUniform1f(HeadLightOn, false);
+		}
+
+		break;
+
+
+
+
+	case 'a':case 'A':
+		if (!ambientlight)
+		{
+			ambientlight = true;
+			glUniform1f(AmbientLightOn, true);
+
+		}
+		else
+		{
+			ambientlight = false;
+			glUniform1f(AmbientLightOn, false);
+		}
+
+		break;
+	case 'p':case 'P':
+		if (!pointlight)
+		{
+			pointlight = true;
+			glUniform1f(PointLightOn, true);
+
+		}
+		else
+		{
+			pointlight = false;
+			glUniform1f(PointLightOn, false);
+		}
+
+		break;
 	case 'd': case 'D':  // debug case
 
 		if (!debug)
 		{
 			debug = true;
+			glUniform1f(DebugOn, true);
 		}
 		else
 		{
 			debug = false;
+			glUniform1f(DebugOn, false);
+
+
 		}
 
 		break;
@@ -924,11 +990,12 @@ void init() {
 	MVP = glGetUniformLocation(shaderProgram, "ModelViewProjection");
 	model_location = glGetUniformLocation(shaderProgram, "Model_Location");
 	//Loads the model view and mvp
-
+	NormalMatrix = glGetUniformLocation(shaderProgram, "NormalMatrix");
 	ModelView = glGetUniformLocation(shaderProgram, "ModelView");
 
 	//loads the point light position light on and intensity uniform locations
 	PointLightPosition = glGetUniformLocation(shaderProgram, "PointLightPosition");
+	AmbientLightOn = glGetUniformLocation(shaderProgram, "AmbientLightOn");
 	PointLightOn = glGetUniformLocation(shaderProgram, "PointLightOn");
 	PointLightIntensity = glGetUniformLocation(shaderProgram, "PointLightIntensity");
 
@@ -940,11 +1007,12 @@ void init() {
 	HeadLightPosition = glGetUniformLocation(shaderProgram, "HeadLightPosition");
 	HeadLightOn = glGetUniformLocation(shaderProgram, "HeadLightOn");
 	HeadLightIntensity = glGetUniformLocation(shaderProgram, "HeadLightIntensity");
-
-	glUniform3f(PointLightPosition, 0.0f, 0.0f, 0.0f);
+	
+	glUniform3f(PointLightPosition, 0.0,0.0,0.0f);
 	glUniform1f(PointLightOn, true);
-	glUniform3f(PointLightIntensity, 0.5f, 0.5f, 0.5f);
+	glUniform3f(PointLightIntensity, 1.0f, 1.0f, 1.0f);
 	glUniform1f(DebugOn, false);
+	glUniform1f(AmbientLightOn, true);
 	glUniform1f(HeadLightOn, true);
 	glUniform3f(HeadLightIntensity, 0.2f, 0.3f, 0.4f);
 	//// initially use a front view
@@ -1018,6 +1086,8 @@ void init() {
 	viewMatrix = camera[0]->getViewMatrix();
 	showMat4("front view: ", viewMatrix);
 	toggleCam++;
+
+	glUniform3fv(HeadLightPosition, 1, glm::value_ptr(glm::vec3(camera[0]->getViewMatrix()[2])));
 
 	// set render state values
 	glEnable(GL_DEPTH_TEST);

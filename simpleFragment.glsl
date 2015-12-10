@@ -21,6 +21,7 @@ uniform vec3 PointLightIntensity;
 
 uniform bool HeadLightOn; // toggles set in application
 uniform bool PointLightOn;
+uniform bool AmbientLightOn;
 uniform bool DebugOn; 
 vec3 ambientColor  = vec3(1.0, 0.0, 0.0); //red ambient 
 vec3 diffuseColor  = vec3(0.0, 1.0, 0.0); // green diffuse
@@ -42,7 +43,7 @@ uniform bool IsTexture;
 out vec4 fragColor;
 
 vec3 vLight(vec3 LightPosition, vec3 LightIntensity, bool directional) {
-    float ambient = 0.5f;
+    float ambient = 0.2f;
     // scale directional ambient
 	float diffuse = 0.0f;
     // compute diffuse in all cases
@@ -65,15 +66,27 @@ vec3 vLight(vec3 LightPosition, vec3 LightIntensity, bool directional) {
 	n = normalize(fNormal);
     diffuse = max(dot(s, n), 0.0);
 
-	if (DebugOn)
-	 return ambient * ambientColor + diffuse * diffuseColor; 
-	 else 
-	 return ambient * LightIntensity + diffuse * LightIntensity;
+	if(DebugOn && AmbientLightOn)
+		return ambient * ambientColor + diffuse * diffuseColor;
+	else
+	{
+		if (DebugOn)
+		{
+			ambient=0.0f;
+			return ambient * ambientColor + diffuse * diffuseColor; 
+		}
+		else if(AmbientLightOn)
+		{
+			return ambient * LightIntensity + diffuse * LightIntensity;
+		}
+		else
+		{
+			// reflected light
+			ambient=0.0f;
+			return ambient * LightIntensity + diffuse * LightIntensity;
+		}
 
-    // reflected light
-	return ambient * LightIntensity + diffuse * LightIntensity;
-
-
+	}
 
 
 	 
@@ -100,7 +113,7 @@ if(IsTexture)
 }
 else
   {
-	vec3 tempColor = vec3(color) * 0.1f;
+	vec3 tempColor = vec3(color) * 0.5f;
 	//initial value
 	if (HeadLightOn){
 		tempColor += vLight(HeadLightPosition,HeadLightIntensity, true);

@@ -41,7 +41,7 @@ void main() {
   }
   gl_Position = ModelViewProjection * vPosition;
   fPosition =  (ModelView * vPosition).xyz;
-fNormal =   vNormal;
+fNormal = normalize(NormalMatrix *vNormal);
   }
   
  

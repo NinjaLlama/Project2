@@ -102,7 +102,7 @@ public:
 			TM = translate(TM, distance)
 			OM = TM * RM
 			step = pitch = yaw = roll = 0*/
-		glm::vec3 zWarbird = glm::vec3(orientationMatrix[2][0] * -1, orientationMatrix[2][1] * -1, orientationMatrix[2][2] * -1);
+		glm::vec3 zWarbird = glm::vec3(-orientationMatrix[2]);
 		zWarbird = glm::normalize(zWarbird);
 		distance = step * stepDistance;
 		axis = glm::vec3(pitch, yaw, roll);
