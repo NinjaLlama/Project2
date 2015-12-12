@@ -1,24 +1,40 @@
 /*
 
-Comp 465 Warbird Simulation Phase 1
+Comp 465 Warbird Simulation Phase 2 + 3
 Therese Horey
 Jesus Moran Perez
 
-Project1.cpp
+main.cpp
 
-This file contains all the C++ code for Phase 1.
-All models are loaded into an array and are given an initial size and translate vector.
+All tri models are loaded into an array and are given an initial size and translate vector.
+One models is a square created from two triangles - used to hold the texture for the background.
 The init() method loads the files and sets the initial view (front view).
-The display() method handles the planet and moon rotation animations, as well as dynamic cameras for Unum and Duo.
-The update() method creates the two rotation matrices for Unum and Primus, and Duo and Secundus.
+The display() method builds the ModelViewProjection matrices for all the objects + textures, as well as dynamic cameras for Warbird, Unum, and Duo.
+The update() method calls each individual object's update method and handles collision testing.  Missle creation and destruction happens here.
+The collision() and distance() methods check for collision between two objects or return the distance squared between two objects, respectively.
 The keyboard() method handles keypress controls.
 
 Controls:
-- v to toggle camera
-- d to toggle debug options *not fully implemented*
-- q to exit program
+w 	warp ship between Unum and Duo
+f 	fire Warbird missile
+g 	toggle Ruber gravity (affects only Warbird)
+v	next camera view
+x	previous camera view
+t 	cycle update rate
+s 	cycle ship speed
+d	toggle debug (colored lights and axes)
+a	toggle ambient light
+p	toggle point light at Ruber
+h	toggle directional head light
+Å™ 	ship forward
+Å´ 	ship backward
+Å® 	ship yaws "left"
+Å© 	ship yaws "right"
+control Å™ 	ship pitches "down"
+control Å´ 	ship pitches "up"
+control Å® 	ship rolls "left"
+control Å© 	ship rolls "right"
 
-TODO : Change program to an object oriented style. Write classes for Planet, Moon, Warbird, and Camera(?).
 
 
 *** If 'Start Without Debugging' is unselectable,
@@ -46,11 +62,11 @@ const int nModelsLoaded = 9;  // number of model files
 const int nModels = 12;  // number of models in this scene (two missile sites and up to three active missiles)
 const int nCameras = 5;
 const int nCollisions = 9;
-char * modelFile[nModelsLoaded] = { "Ruber.tri", "Unum.tri ", "Duo.tri", "Primus.tri",
-"Segundus.tri", "BattleCruiser.tri", "missile.tri", "axes-r100.tri", "missileBase.tri" };//, "plane.tri" };
+char * modelFile[nModelsLoaded] = { "Ruber3.tri", "Unum.tri ", "Duo.tri", "Primus.tri",
+"Segundus.tri", "BattleCruiser.tri", "missile.tri", "axes-r100.tri", "missileBase.tri" };
 float modelBR[nModelsLoaded];       // model's bounding radius
 float scaleValue[nModelsLoaded];    // model's scaling "size" value
-const int nVertices[nModelsLoaded] = { 264 * 3, 264 * 3, 278 * 3, 264 * 3, 264 * 3, 2772 * 3, 644 * 3, 120 * 3, 1382 * 3 };//, 2*3 };
+const int nVertices[nModelsLoaded] = { 264 * 3, 264 * 3, 278 * 3, 264 * 3, 264 * 3, 2772 * 3, 644 * 3, 120 * 3, 1382 * 3 };
 char * vertexShaderFile = "simpleVertex.glsl";
 char * fragmentShaderFile = "simpleFragment.glsl";
 GLuint shaderProgram;
@@ -61,13 +77,14 @@ bool ambientlight = true;
 bool pointlight = true;
 
 int width = 640, height = 480;    
-char * fileName[6] = { "spaceboxFront.raw", "spaceboxRight.raw", "spaceboxBack.raw", "spaceboxLeft.raw", "spaceboxDown.raw","spaceboxUp.raw" };
+char * fileName[6] = { "spacebox2Front.raw", "spacebox2Right.raw", "spacebox2Back.raw", "spacebox2Left.raw", "spacebox2Down.raw","spacebox2Up.raw" };
 GLuint texture[6], Texture1, Texture2, Texture3, Texture4, Texture5, Texture6, Tex1, Tex2, Tex3, Tex4, Tex5, vTexCoord, showTexture;  // texture id
-GLuint VBO2, VAO2, ibo;
+GLuint ibo;
 GLuint HeadLightPosition, HeadLightIntensity, PointLightPosition, PointLightIntensity, NormalMatrix;
 GLboolean HeadLightOn, PointLightOn;
 GLboolean DebugOn;
 int id = 0;
+//texture model matrices
 glm::mat4 texModelFront = glm::mat4(1.0);
 glm::mat4 texModelRight = glm::mat4(1.0);
 glm::mat4 texModelBack = glm::mat4(1.0);
@@ -75,18 +92,8 @@ glm::mat4 texModelLeft = glm::mat4(1.0);
 glm::mat4 texModelDown = glm::mat4(1.0);
 glm::mat4 texModelUp = glm::mat4(1.0);
 glm::mat4 texScale = glm::scale(glm::mat4(1.0), glm::vec3(23100.0));
-//static const GLfloat point[] = {
-//	0.615, 0.435, 0, -0.615, -0.435, 0, -0.615, 0.435,0
-//	-0.615, -0.435, 0, 0.615, 0.435, 0, 0.615, -0.435,0 };
-//
-//// Texture Coordinates for each vertex
-//// points * 2 (s, t)
-//static const GLfloat texCoords[] = {
-//	0.0f, 0.0f,     // 0
-//	1.0f, 0.0f,     // 1
-//	1.0f, 1.0f,     // 2
-//	0.0f, 1.0f     // 3
-//};   
+
+//Square model for texture container
 // Set up vertex data (and buffer(s)) and attribute pointers
 static const GLfloat point[] = {
 	// Positions          // Colors           // Texture Coords
@@ -105,8 +112,6 @@ static const GLfloat texCoords[] = {
 	0.0f, 0.0f,     // 2
 	0.0f, 1.0f };
 
-//// vectors and values for lookAt
-//glm::vec3 eye, at, up;
 
 Camera * camera[nCameras];
 int toggleCam = 0;
@@ -175,7 +180,7 @@ GLuint MVP, model_location, ModelView, AmbientLightOn; // Model View Projection 
 GLuint vPosition[nModelsLoaded], vColor[nModelsLoaded], vNormal[nModelsLoaded];   // vPosition, vColor, vNormal handles for models
 // model, view, projection matrices and values to create modelMatrix.
 //loaded in order of Ruber, Umun, Duo, Primus, Secundus, Warbird, missiles
-float modelSize[nModelsLoaded] = { 2000.0f, 200.0f, 400.0f, 100.0f, 150.0f, 150.0f, 25.0f, 150.0f, 30.0f };//, 5000.0f };   // size of model
+float modelSize[nModelsLoaded] = { 2000.0f, 200.0f, 400.0f, 100.0f, 150.0f, 150.0f, 25.0f, 150.0f, 30.0f };  // size of model
 glm::vec3 scale[nModelsLoaded];       // set in init()
 glm::vec3 translate[nModelsLoaded] = { glm::vec3(0, 0, 0), glm::vec3(4000, 0, 0), glm::vec3(9000, 0, 0),
 glm::vec3(900, 0, 0), glm::vec3(1750, 0, 0),
@@ -184,7 +189,7 @@ glm::vec3(5000, 1000, 5000), glm::vec3(4900, 1000, 4850), glm::vec3(5000, 1000, 
 
 };
 
-
+//Object declarations, set in init()
 Planet * ruber;
 Planet * unum;
 Planet * duo;
@@ -246,7 +251,7 @@ bool collision(glm::mat4 object1, glm::mat4 object2, float radius1, float radius
 	float sumRadius = (radius1 + radius2)*(radius1 + radius2);
 
 	//printf("%f, %f\n", distance, sumRadius);
-
+	//compares the square of the distance with the square of the radii
 	if (distance < sumRadius)
 		collision = true;
 	else
@@ -258,7 +263,7 @@ float distance(glm::mat4 object1, glm::mat4 object2)
 {
 	glm::vec3 position1 = glm::vec3(object1[3]);
 	glm::vec3 position2 = glm::vec3(object2[3]);
-
+	//computes distance squared
 	float distance = pow(abs(position1.x - position2.x), 2) + pow(abs(position1.y - position2.y), 2) + pow(abs(position1.z - position2.z), 2);
 	//printf("distance = %f", distance);
 	return distance;
@@ -268,7 +273,7 @@ float distance(glm::mat4 object1, glm::mat4 object2)
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	// update model matrix
-	glUniform1f(showTexture, 0);
+	glUniform1f(showTexture, 0); //don't use texture, use color
 	modelMatrix[0] = ruber->getModelMatrix();
 	modelMatrix[1] = unum->getModelMatrix();
 	modelMatrix[2] = duo->getModelMatrix();
@@ -284,7 +289,7 @@ void display() {
 	
 	//showMat4("duo", modelMatrix[2]);
 	for (int m = 0; m < nModels; m++) {
-		//dynamic cameras
+		//dynamic cameras and directioal head lights
 		//warbird camera
 		if (cycleForward && toggleCam == 1 || cycleBackward && toggleCam == 0)//front head light
 		{
@@ -296,7 +301,6 @@ void display() {
 		}
 		if (cycleForward && toggleCam == 3 || cycleBackward && toggleCam == 2)
 		{
-			//(glm::vec3(5000.0f, 1300.0f, 6000.0f), glm::vec3(5000.0f, 1000.0f, 5000.0f), glm::vec3(0.0f, 1.0f, 0.0f)
 			glm::vec3 zWarbird = glm::vec3(modelMatrix[5][2][0], modelMatrix[5][2][1], modelMatrix[5][2][2]);
 			zWarbird = glm::normalize(zWarbird);
 			glm::vec3 upWarbird = glm::vec3(modelMatrix[5][1]);
@@ -305,7 +309,7 @@ void display() {
 			camera[2]->at = glm::vec3(modelMatrix[5][3]) + upWarbird * 300.0f;
 			camera[2]->up = upWarbird;
 			viewMatrix = camera[2]->getViewMatrix();
-			glUniform3fv(HeadLightPosition, 1, glm::value_ptr(glm::vec3(modelMatrix[5][2])));
+			glUniform3fv(HeadLightPosition, 1, glm::value_ptr(glm::vec3(modelMatrix[5][2]))); //warbird head light
 		}
 		//Unum camera
 		if (cycleForward && toggleCam == 4 || cycleBackward && toggleCam == 3)
@@ -317,14 +321,11 @@ void display() {
 			camera[3]->at = glm::vec3(unum->getModelMatrix()[3]);							// camera is looking at Unum
 			camera[3]->up = glm::vec3(0.0f, 1.0f, 0.0f);             // camera's up is Y
 			viewMatrix = camera[3]->getViewMatrix();
-			glUniform3fv(HeadLightPosition, 1, glm::value_ptr(glm::vec3(-modelMatrix[1][2])));
+			glUniform3fv(HeadLightPosition, 1, glm::value_ptr(glm::vec3(-modelMatrix[1][2]))); //Unum head light
 		}
 		//Duo camera
 		if (cycleForward && toggleCam == 5 || cycleBackward && toggleCam == 4)
 		{
-			//90 degrees CW about y-axis: (x, y, z) -> (-z, y, x) -- this is how to get z-axis from x-axis --
-			//glm::vec3 zDuo = glm::vec3(duo->getModelMatrix()[0][2], duo->getModelMatrix()[0][1] * -1, duo->getModelMatrix()[0][0] * -1);
-			//oh, this works too: (-1)at vector for -z axis
 			glm::vec3 zDuo = glm::vec3(duo->getModelMatrix()[2][0] * -1, duo->getModelMatrix()[2][1] * -1, duo->getModelMatrix()[2][2] * -1);
 			//showVec3("Duo", zDuo);
 			zDuo = glm::normalize(zDuo);
@@ -332,7 +333,7 @@ void display() {
 			camera[4]->at = glm::vec3(duo->getModelMatrix()[3]);								// camera is looking at Duo
 			camera[4]->up = glm::vec3(0.0f, 1.0f, 0.0f);                 // camera's up is Y
 			viewMatrix = camera[4]->getViewMatrix();
-			glUniform3fv(HeadLightPosition, 1, glm::value_ptr(glm::vec3(-modelMatrix[2][2])));
+			glUniform3fv(HeadLightPosition, 1, glm::value_ptr(glm::vec3(-modelMatrix[2][2]))); //Duo head light
 		}
 		glm::mat4 modelView;
 		modelView = modelMatrix[m];
@@ -347,20 +348,20 @@ void display() {
         model_location=glGetUniformLocation(shaderProgram,"model");
 		if (m < 6)
 		{
-			glBindVertexArray(VAO[m]);
-			glDrawArrays(GL_TRIANGLES, 0, nVertices[m]);
+				glBindVertexArray(VAO[m]);
+				glDrawArrays(GL_TRIANGLES, 0, nVertices[m]);
 		}
 		else if (m == 6 || m == 7) //missile sites
 		{
 			glBindVertexArray(VAO[8]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[8]);
 		}
-		else if (m == 8 ) //site warbird missile
+		else if (m == 8 ) //warbird missile
 		{
 			glBindVertexArray(VAO[6]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[6]);
 		}
-		else if (m == 9 ) //site Unum missile
+		else if (m == 9 ) //Unum missile
 		{
 			glBindVertexArray(VAO[6]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[6]);
@@ -375,30 +376,24 @@ void display() {
 			glBindVertexArray(VAO[7]);
 			glDrawArrays(GL_TRIANGLES, 0, nVertices[7]);
 		}
-		/*else if (m == 12)
-		{
-			glUniform1f(showTexture, 1);
-			glBindVertexArray(VAO[9]);
-			glDrawArrays(GL_TRIANGLES, 0, nVertices[9]);
-		}*/
 		else
 		{
 			//do nothing
 		}
 		
 	}
-	glUniform1f(showTexture, 1);
+	glUniform1f(showTexture, 1); //use texture, not color
 
 	glActiveTexture(GL_TEXTURE0 + 0); // Texture unit 0
-	glBindTexture(GL_TEXTURE_2D, texture[0]);
-	glUniform1f(Tex1, 1);
-	ModelViewProjectionMatrix = projectionMatrix * viewMatrix * texModelFront;
+	glBindTexture(GL_TEXTURE_2D, texture[0]); //activate and bind texture
+	glUniform1f(Tex1, 1); //tell the fragment shader which texture to use
+	ModelViewProjectionMatrix = projectionMatrix * viewMatrix * texModelFront; //set matrix info for the texture
 	glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(texModelFront));
 	glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(ModelViewProjectionMatrix));
 	model_location = glGetUniformLocation(shaderProgram, "model");
 	glBindVertexArray(VAO[9]);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-	glDrawElements(GL_TRIANGLES, 7, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+	glDrawElements(GL_TRIANGLES, 7, GL_UNSIGNED_INT, BUFFER_OFFSET(0)); //draw texture in the square
 
 	glActiveTexture(GL_TEXTURE0 + 1); // Texture unit 1
 	glBindTexture(GL_TEXTURE_2D, texture[1]);
@@ -480,7 +475,6 @@ void update(void){
 	secundus->update();
 	warbird->update(gravity);
 	axes->update(gravity);
-	//if peron presses f then the fire missile function is called
 	if (activemissileWarbird)
 	{
 		if (siteUnumDestroyed) //missile site Unum destroyed, missle should only seek Secundus site
@@ -490,8 +484,8 @@ void update(void){
 		else //missile can seek either Unum or Secundus site
 			missileWarbird->update(modelMatrix[6], modelMatrix[7], shipmissileSpeed);
 
-		warbirdMissileCollision[0] = collision(modelMatrix[8], modelMatrix[6], modelSize[8] + 10.0f, modelSize[6] + 20.0f); //missile hits site Unum
-		warbirdMissileCollision[1] = collision(modelMatrix[8], modelMatrix[7], modelSize[8] + 10.0f, modelSize[7] + 20.0f); //missile hits site Secundus
+		warbirdMissileCollision[0] = collision(modelMatrix[8], modelMatrix[6], modelSize[8] + 10.0f, modelSize[6] + 10.0f); //missile hits site Unum
+		warbirdMissileCollision[1] = collision(modelMatrix[8], modelMatrix[7], modelSize[8] + 10.0f, modelSize[7] + 10.0f); //missile hits site Secundus
 		//warbird missile collision with planets
 		warbirdMissileCollision[2] = collision(modelMatrix[8], ruber->getModelMatrix(), modelSize[8] + 10.0f, modelSize[0]);
 		warbirdMissileCollision[3] = collision(modelMatrix[8], unum->getModelMatrix(), modelSize[8] + 10.0f, modelSize[1]);
@@ -519,7 +513,7 @@ void update(void){
 	if (activemissileUnum)
 	{
 		missileSiteUnum->update(warbird->getModelMatrix(), sitemissileSpeed);
-		warbirdCollision[5] = collision(modelMatrix[9], modelMatrix[5], modelSize[9] + 10.0f, modelSize[5] + 20.0f); //Unum missile hits warbird
+		warbirdCollision[5] = collision(modelMatrix[9], modelMatrix[5], modelSize[9] + 10.0f, modelSize[5] + 10.0f); //Unum missile hits warbird
 		//missile Unum collision with planets
 		if (missileSiteUnum->missileUpdate > 200)
 		{
@@ -545,7 +539,7 @@ void update(void){
 	if (activemissileSecundus)
 	{
 		missileSiteSecundus->update(warbird->getModelMatrix(), sitemissileSpeed);
-		warbirdCollision[6] = collision(modelMatrix[10], modelMatrix[5], modelSize[10] + 10.0f, modelSize[5] + 20.0f);  //Secundus missile hits warbird
+		warbirdCollision[6] = collision(modelMatrix[10], modelMatrix[5], modelSize[10] + 10.0f, modelSize[5] + 10.0f);  //Secundus missile hits warbird
 		//missile Secundus collision with planets
 		if (missileSiteSecundus->missileUpdate > 200)
 		{
@@ -594,6 +588,7 @@ void update(void){
 	warbirdCollision[3] = collision(warbird->getModelMatrix(), primus->Moon(duo->getModelMatrix(), primus->getModelMatrix()), modelSize[5] + 10.0f, modelSize[3]);
 	warbirdCollision[4] = collision(warbird->getModelMatrix(), secundus->Moon(duo->getModelMatrix(), secundus->getModelMatrix()), modelSize[5] + 10.0f, modelSize[4]);
 	
+	//check all collisions
 	for (int i = 0; i < nCollisions; i++)
 	{
 		if (warbirdCollision[i])
@@ -670,8 +665,6 @@ void keyboard(unsigned char key, int x, int y) {
 		break;
 
 	case 'v': case 'V': //toggle camera
-		/*if (toggleCam != 3)
-			glUniform3fv(HeadLightPosition, 1, glm::value_ptr(glm::vec3(camera[toggleCam]->getViewMatrix()[2])));*/
 		if (cycleForward)
 		{
 			if (toggleCam == nCameras)
@@ -758,44 +751,30 @@ void keyboard(unsigned char key, int x, int y) {
 
 		if (!atUnum) // warp to Unum
 		{
+			//get -z vector from Unum
+			//warbird's rotation matrix is Unum's + 180
+			//warbird's translate matrix is Unum's + 8000 units out on Unum's -z
 			glm::vec3 zUnum = glm::vec3(unum->getModelMatrix()[0][2], unum->getModelMatrix()[0][1] * -1, unum->getModelMatrix()[0][0] * -1);
 			zUnum = glm::normalize(zUnum);
 			warbird->rotationMatrix = unum->rotationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));
 			warbird->translationMatrix = glm::translate(identity, glm::vec3(unum->getModelMatrix()[3]) + zUnum * 8000.0f);
-			//float angle = warbird->angleBetween(glm::vec3(warbird->translationMatrix[2]), glm::vec3(unum->getModelMatrix()[2]), glm::vec3(0));
-			////showMat4("umum: ", unum->getModelMatrix());
-			//if (unum->getModelMatrix()[3][2] > 0)
-			//{
-			//	angle = 2 * PI - angle;
-			//}
-			////printf("angle %f", angle);
-			//warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));
-			//showMat4("warbird", warbird->getModelMatrix());
-			//showMat4("unum", unum->getModelMatrix());
+			
 			atUnum = true;
 		}
 		else //warp to Duo
 		{
+			//same as with Unum
 			glm::vec3 zDuo = glm::vec3(duo->getModelMatrix()[0][2], duo->getModelMatrix()[0][1] * -1, duo->getModelMatrix()[0][0] * -1);
 			zDuo = glm::normalize(zDuo);
 			warbird->rotationMatrix = duo->rotationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));;
 			warbird->translationMatrix = glm::translate(identity, glm::vec3(duo->getModelMatrix()[3]) + zDuo * 8000.0f);
-			/*warbird->translationMatrix = warbird->getDirectionMatrix(glm::vec3(warbird->translationMatrix[3]), glm::vec3(duo->getModelMatrix()[3]));
-			warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, PI, glm::vec3(0, 1, 0));*/
-			/*float angle = warbird->angleBetween(glm::vec3(warbird->translationMatrix[2]), glm::vec3(duo->getModelMatrix()[2]), glm::vec3(0));
-			if (duo->getModelMatrix()[3][2] > 0)
-			{
-				angle = 2 * PI - angle;
-			}
-			warbird->translationMatrix = warbird->translationMatrix * glm::rotate(identity, angle + PI, glm::vec3(0, 1, 0));*/
+			
 			atUnum = false;
 		}
 
 		break;
 
-		//fires the ships missiles
-		//work in progress...
-	case 'f': case 'F':
+	case 'f': case 'F': //fires warbird missiles
 	
 		if ((activemissileWarbird == false && missileCountWarbird != 0) && !(siteUnumDestroyed && siteSecundusDestroyed))
 		{
@@ -810,7 +789,7 @@ void keyboard(unsigned char key, int x, int y) {
 		
 		break;
 
-	case 'h':case 'H':
+	case 'h':case 'H': //toggle directional head light
 		if (!headlight)
 		{
 			headlight = true;
@@ -828,7 +807,7 @@ void keyboard(unsigned char key, int x, int y) {
 
 
 
-	case 'a':case 'A':
+	case 'a':case 'A': //toggle ambient light
 		if (!ambientlight)
 		{
 			ambientlight = true;
@@ -842,7 +821,7 @@ void keyboard(unsigned char key, int x, int y) {
 		}
 
 		break;
-	case 'p':case 'P':
+	case 'p':case 'P': //toggle point light at Ruber
 		if (!pointlight)
 		{
 			pointlight = true;
@@ -942,7 +921,7 @@ void init() {
 
 
 	// generate VAOs and VBOs
-	glGenVertexArrays(nModelsLoaded+1, VAO);
+	glGenVertexArrays(nModelsLoaded+1, VAO); //nModelsLoaded +1 from tri files + 1 square
 	glGenBuffers(nModelsLoaded+1, buffer);
 	// load the buffers from the model files
 	for (int i = 0; i < nModelsLoaded; i++) {
@@ -953,9 +932,9 @@ void init() {
 	}
 
 
-	for (int i = 0; i < nModelsLoaded; i++) {
+	/*for (int i = 0; i < nModelsLoaded; i++) {
 		printf("model size: %f, %f\n", modelBR[i], scale[i]);
-	}
+	}*/
 
 	ruber = new Planet(glm::vec3(0, 0, 0), scale[0], 264 * 3, 0.0f, 2000.0f, "Ruber.tri");
 	unum = new Planet(glm::vec3(4000, 0, 0), scale[1], 264 * 3, 0.004f, 200.0f, "Unum.tri");
@@ -972,17 +951,18 @@ void init() {
 	siteSecundus = new Planet(glm::vec3(0, 150, 0), scale[8], 1382 * 3, 0.002f, 30.0f, "missileBase.tri");
 
 
-	//missileWarbird->setmissileScale(glm::vec3(20.0));
+	/*missileWarbird->setmissileScale(glm::vec3(20.0));
 	missileSiteUnum->setmissileScale(glm::vec3(20.0));
-	missileSiteSecundus->setmissileScale(glm::vec3(20.0));
+	missileSiteSecundus->setmissileScale(glm::vec3(20.0));*/
+
 	texModelFront = glm::translate(texModelFront, glm::vec3(0, 0, -23100)) * texScale;
 	texModelRight = glm::translate(texModelRight, glm::vec3(23100, 0, 0)) *glm::rotate(identity, -PI/2, glm::vec3(0,1,0))* texScale;
 	texModelLeft = glm::translate(texModelLeft, glm::vec3(0, 0, 23100)) *glm::rotate(identity, PI , glm::vec3(0, 1, 0))* texScale;
 	texModelBack = glm::translate(texModelBack, glm::vec3(-23100, 0, 0)) *glm::rotate(identity, PI / 2, glm::vec3(0, 1, 0))* texScale;
 	texModelDown = glm::translate(texModelDown, glm::vec3(0, -23100, 0)) *glm::rotate(identity, PI / 2, glm::vec3(1, 0, 0))* texScale;
 	texModelUp = glm::translate(texModelUp, glm::vec3(0, 23100, 0)) *glm::rotate(identity, -PI / 2, glm::vec3(1, 0, 0))* texScale;
+	
 	//Set the positonal lighting
-
 	GLint light_Position_location = glGetUniformLocation(shaderProgram, "Light_Position");
 	glm::vec3 light_position = glm::vec3(0.0f, 5000.0f, 0.0f);
 	glUniform3f(light_Position_location, light_position.x, light_position.y, light_position.z);
@@ -1088,10 +1068,10 @@ void init() {
 	toggleCam++;
 
 	glUniform3fv(HeadLightPosition, 1, glm::value_ptr(glm::vec3(camera[0]->getViewMatrix()[2])));
-
+	
 	// set render state values
 	glEnable(GL_DEPTH_TEST);
-	glClearColor(0.7f, 0.7f, 0.7f, 0.7f);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 	lastTime = glutGet(GLUT_ELAPSED_TIME);  // get elapsed system time
 }

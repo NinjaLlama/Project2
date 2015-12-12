@@ -1,4 +1,8 @@
 /*
+object3D.hpp
+
+Object3D is the class which all other classes in the project inherit from.
+Handles the rotation, translation, and scale matrices.
 
 */
 

@@ -1,5 +1,14 @@
 /*
+planet.hpp
 
+Planet class inherits from Object3D.
+
+DuoRotate180() is used to rotate Duo 180 degrees in the init() of main.cpp.
+This is used to keep all objects' relative axes the same.
+
+update() rotates the planets counter-clockwaise.
+
+Moon() and missileSite() do the exact same thing but are named differently so I didn't confuse myself.
 */
 
 # ifndef PLANET_H_
@@ -79,27 +88,6 @@ public:
 		rotationMatrix = glm::rotate(rotationMatrix, rotation, rotationAxis);
 
 	}
-
-	/*void Planet::createModelMatrix(void)
-	{
-		planetModelMatrix = planetRotationMatrix * glm::translate(glm::mat4(), translate) *
-			glm::scale(glm::mat4(), scale);
-
-	}
-
-	void Planet::createRotationMatrix(void)
-	{
-		rotation += orbit;
-		if (rotation >  2 * PI) rotation = 0.0f;
-		glm::mat4 planetRotationMatrix = glm::rotate(planetRotationMatrix, rotation, glm::vec3(0, 1, 0));
-
-	}
-
-
-	glm::mat4 Planet::getPlanetMatrix(void)
-	{
-		return planetModelMatrix;
-	}*/
 
 
 };

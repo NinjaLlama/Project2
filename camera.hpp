@@ -1,5 +1,9 @@
 /*
+camera.hpp
 
+Camera class creates a view matrix given eye, at and up vectors.
+Name is used to label the current view.
+Not sure why it has a rotation variable.
 */
 
 
