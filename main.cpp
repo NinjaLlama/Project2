@@ -67,8 +67,8 @@ char * modelFile[nModelsLoaded] = { "Ruber3.tri", "Unum.tri ", "Duo.tri", "Primu
 float modelBR[nModelsLoaded];       // model's bounding radius
 float scaleValue[nModelsLoaded];    // model's scaling "size" value
 const int nVertices[nModelsLoaded] = { 264 * 3, 264 * 3, 278 * 3, 264 * 3, 264 * 3, 2772 * 3, 644 * 3, 120 * 3, 1382 * 3 };
-char * vertexShaderFile = "simpleVertex.glsl";
-char * fragmentShaderFile = "simpleFragment.glsl";
+char * vertexShaderFile = "vertex.glsl";
+char * fragmentShaderFile = "fragment.glsl";
 GLuint shaderProgram;
 GLuint VAO[nModelsLoaded+1];      // Vertex Array Objects
 GLuint buffer[nModelsLoaded+1];   // Vertex Buffer Objects
@@ -77,7 +77,7 @@ bool ambientlight = true;
 bool pointlight = true;
 
 int width = 640, height = 480;    
-char * fileName[6] = { "spacebox3Front.raw", "spacebox3Right.raw", "spacebox3Back.raw", "spacebox3Left.raw", "spacebox3Down.raw","spacebox3Top.raw" };
+char * fileName[6] = { "spacebox2Front.raw", "spacebox2Right.raw", "spacebox2Back.raw", "spacebox2Left.raw", "spacebox2Down.raw","spacebox2Up.raw" };
 GLuint texture[6], Texture1, Texture2, Texture3, Texture4, Texture5, Texture6, Tex1, Tex2, Tex3, Tex4, Tex5, vTexCoord, showTexture;  // texture id
 GLuint ibo;
 GLuint HeadLightPosition, HeadLightIntensity, PointLightPosition, PointLightIntensity, NormalMatrix;
