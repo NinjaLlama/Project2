@@ -207,7 +207,6 @@ public:
 					{
 						if (colinear(direction1Vector, -missileLatVector, .2f) == true)
 						{
-							printf("here!\n");
 							target1Vector = glm::vec3(target1Vector.x + .1f, target1Vector.y + (-0.2f), target1Vector.z + 0.1f);
 						}
 						glm::vec3 axis = glm::normalize(glm::cross(glm::normalize(target1Vector - missileVector), -missileLatVector));

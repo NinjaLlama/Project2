@@ -640,17 +640,10 @@ void update(void){
 // Estimate FPS, use for fixed interval timer driven animation
 void intervalTimer(int i) {
 	glutTimerFunc(timerDelay[timer], intervalTimer, 1);
-	/*bool collision = false;
-	for (int i = 0; i < nCollisions; i++)
-	{
-		if (collide[i])
-		{
-			collision = true;
-		}
-	}
-	if (!collision)*/
-	//if (!warbirdDestroyed)
-	update();
+
+	if (!warbirdDestroyed && !((missileCountWarbird == 0 && !activemissileWarbird) && !(siteUnumDestroyed && siteSecundusDestroyed)) && !(siteUnumDestroyed && siteSecundusDestroyed))
+		update();
+
 }
 
 void keyboard(unsigned char key, int x, int y) {
