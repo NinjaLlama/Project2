@@ -77,7 +77,7 @@ bool ambientlight = true;
 bool pointlight = true;
 
 int width = 640, height = 480;    
-char * fileName[6] = { "spacebox2Front.raw", "spacebox2Right.raw", "spacebox2Back.raw", "spacebox2Left.raw", "spacebox2Down.raw","spacebox2Up.raw" };
+char * fileName[6] = { "spacebox3Front.raw", "spacebox3Right.raw", "spacebox3Back.raw", "spacebox3Left.raw", "spacebox3Down.raw","spacebox3Top.raw" };
 GLuint texture[6], Texture1, Texture2, Texture3, Texture4, Texture5, Texture6, Tex1, Tex2, Tex3, Tex4, Tex5, vTexCoord, showTexture;  // texture id
 GLuint ibo;
 GLuint HeadLightPosition, HeadLightIntensity, PointLightPosition, PointLightIntensity, NormalMatrix;
